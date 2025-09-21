@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">MyToDo</string>
+    <string name="description">Description</string>
+    <string name="search">Search tasks</string>
+    <string name="search_tasks">Search tasks</string>
+    <string name="clear_search">Clear search</string>
+    <string name="include_completed">Include completed tasks</string>
+    <string name="include_completed_tasks">Include completed tasks</string>
+    <string name="no_tasks">No tasks available</string>
+    <string name="add_task">Add Task</string>
+    <string name="select_task_to_edit">Select a task to edit</string>
+    <string name="select_task_to_move">Select a task to move</string>
+    <string name="select_task_to_complete">Select a task to complete</string>
+    <string name="select_task_to_delete">Select a task to delete</string>
+    <string name="description_required">Description is required</string>
+    <string name="delete">Delete</string>
+    <string name="edit">Edit</string>
+    <string name="move">Move</string>
+    <string name="complete">Complete</string>
+    <string name="uncomplete">Uncomplete</string>
+    <string name="category_waiting">Waiting</string>
+    <string name="category_completed">Completed</string>
+    <string name="completed_category_title">Completed</string>
+    <string name="completed_label">Completed</string>
+    <string name="recurring">Recurring</string>
+    <string name="reminder">Reminder</string>
+    <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
+    <string name="when_to_perform">When to Perform</string>
+    <string name="task_reminder">Task Reminder</string>
+    <string name="snooze">Snooze</string>
+    <string name="snooze_5min">Snooze (5min)</string>
+    <string name="day_of_week_required">Day of week is required</string>
+    <string name="due_date_required">Due date is required</string>
+    <string name="select_date">Select date</string>
+    <string name="clear_date">Clear date</string>
+    <string name="select_time">Select time</string>
+    <string name="clear_time">Clear time</string>
+    <string name="date_label">Date</string>
+    <string name="time_label">Time</string>
+    <string name="daily_task_wrong_day">Daily tasks can only be completed on the current day.</string>
+    <string name="long_press_for_info">Long press for more information</string>
+    <string name="delete_task">Delete Task</string>
+    <string name="delete_task_confirmation">Are you sure you want to delete the task \"%1$s\"?</string>
+    <string name="task_deleted">Task deleted</string>
+    <string name="error_saving_task">Error saving task. Please try again.</string>
+    <string name="task_completed_notification">Task completed: %1$s</string>
+    <string name="task_deleted_notification">Task deleted: %1$s</string>
+    <string name="playing_test_sound">Playing test sound...</string>
+    <string name="error_playing_sound">Error playing sound</string>
+    <string name="exact_alarms_required">Exact Alarms Required</string>
+    <string name="exact_alarms_message">This app needs exact alarm permission to schedule reminders properly. Please enable it in your device settings.</string>
+    <string name="open_settings">Open Settings</string>
+    <string name="vibration_info">Vibration is enabled by default for all reminders</string>
+    <string name="reminder_behavior_info">• Reminders cannot be dismissed by swiping\n• Sound and vibration continue until you take action\n• Use Snooze, Complete, Edit, or Delete buttons to stop</string>
+    
+    <!-- Localized day names and options -->
+    <string name="option_none">None</string>
+    <string name="option_immediate">Immediate</string>
+    <string name="option_soon">Soon</string>
+    <string name="recurrence_daily">Daily</string>
+    <string name="recurrence_weekly">Weekly</string>
+    <string name="day_sunday">Sunday</string>
+    <string name="day_monday">Monday</string>
+    <string name="day_tuesday">Tuesday</string>
+    <string name="day_wednesday">Wednesday</string>
+    <string name="day_thursday">Thursday</string>
+    <string name="day_friday">Friday</string>
+    <string name="day_saturday">Saturday</string>
+    <string name="day_sun_short">Sun</string>
+    <string name="day_mon_short">Mon</string>
+    <string name="day_tue_short">Tue</string>
+    <string name="day_wed_short">Wed</string>
+    <string name="day_thu_short">Thu</string>
+    <string name="day_fri_short">Fri</string>
+    <string name="day_sat_short">Sat</string>
+    <string name="reminder_on_days">Reminder on days:</string>
+    <string name="weekdays">Weekdays</string>
+    <string name="weekends">Weekends</string>
+    <string name="all_days">All Days</string>
+
+    <string name="reorder_task">Reorder task</string>
+
+    <string-array name="days_of_week">
+        <item>Waiting</item>
+        <item>Immediate</item>
+        <item>Soon</item>
+        <item>Sunday</item>
+        <item>Monday</item>
+        <item>Tuesday</item>
+        <item>Wednesday</item>
+        <item>Thursday</item>
+        <item>Friday</item>
+        <item>Saturday</item>
+    </string-array>
+
+    <string-array name="recurrence_types">
+        <item>Daily</item>
+        <item>Weekly</item>
+        <item>Biweekly</item>
+        <item>Monthly</item>
+        <item>Yearly</item>
+    </string-array>
+
+    <string-array name="reminder_options">
+        <item>At the time of the task</item>
+        <item>15 minutes before</item>
+        <item>30 minutes before</item>
+        <item>60 minutes before</item>
+    </string-array>
+    
+    <!-- Reminder Settings -->
+    <string name="reminder_settings">Reminder Settings</string>
+    <string name="reminder_sound">Reminder Sound</string>
+    <string name="current_sound">Current Sound</string>
+    <string name="select_sound">Select Sound</string>
+    <string name="test_sound">Test Sound</string>
+    <string name="vibration">Vibration</string>
+    <string name="reminder_behavior">Reminder Behavior</string>
+    <string name="back">Back</string>
+    <string name="settings">Settings</string>
+</resources>

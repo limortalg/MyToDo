@@ -1,0 +1,233 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- TABLET LAYOUT - This should be used on screens 600dp and wider (large tablets) -->
+<!-- DO NOT USE ON PHONES OR SMALL TABLETS - This layout has app name in same row as logo -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- App Header with Controls -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@android:color/white"
+        android:elevation="4dp">
+
+        <!-- Row 1: App Icon, Name, and All Buttons (single line) -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="16dp"
+            android:background="@android:color/white"
+            android:elevation="4dp">
+
+            <!-- App Icon -->
+            <ImageView
+                android:id="@+id/appIconImageView"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@drawable/ic_launcher_foreground"
+                android:background="@drawable/icon_background_with_border"
+                android:padding="8dp"
+                android:scaleType="fitCenter" />
+
+            <!-- App Name - Visible on tablets (wide screens) -->
+            <TextView
+                android:id="@+id/appNameTablet"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="12dp"
+                android:text="@string/app_name"
+                android:textSize="20sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/black"
+                android:padding="8dp"
+                android:gravity="center_vertical"
+                android:visibility="visible" />
+
+            <!-- Add Task Button (Icon only) -->
+            <ImageButton
+                android:id="@+id/addButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_input_add"
+                android:background="@drawable/rounded_button"
+                android:scaleType="fitCenter"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:tint="@android:color/white"
+                android:contentDescription="@string/add_task" />
+
+            <!-- Search Icon Button -->
+            <ImageButton
+                android:id="@+id/searchIconButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_search"
+                android:background="@drawable/rounded_button"
+                android:scaleType="fitCenter"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:tint="@android:color/white"
+                android:contentDescription="@string/search_tasks" />
+
+            <!-- Settings Button -->
+            <ImageButton
+                android:id="@+id/settingsButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_manage"
+                android:background="@drawable/rounded_button"
+                android:scaleType="fitCenter"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:tint="@android:color/white"
+                android:contentDescription="Settings" />
+
+            <!-- Language Toggle -->
+            <TextView
+                android:id="@+id/languageIcon"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:text="EN"
+                android:textSize="16sp"
+                android:textStyle="bold"
+                android:textColor="@android:color/white"
+                android:background="@drawable/rounded_button"
+                android:padding="8dp"
+                android:gravity="center" />
+
+        </LinearLayout>
+
+        <!-- Search Controls: Search Bar and Checkbox (hidden by default) -->
+        <LinearLayout
+            android:id="@+id/searchControlsLayout"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:padding="12dp"
+            android:background="#F8F9FA"
+            android:visibility="gone">
+
+            <!-- Search Bar -->
+            <EditText
+                android:id="@+id/searchEditText"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:hint="@string/search_tasks"
+                android:background="@android:color/white"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:drawableStart="@android:drawable/ic_menu_search"
+                android:drawablePadding="8dp" />
+
+            <!-- Include Completed Checkbox -->
+            <CheckBox
+                android:id="@+id/includeCompletedCheckBox"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/include_completed_tasks"
+                android:textColor="@android:color/black"
+                android:textSize="12sp"
+                android:maxLines="2"
+                android:lineSpacingExtra="2dp" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- RecyclerView for Tasks -->
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recyclerView"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginTop="8dp" />
+
+    <!-- Action Buttons Row - Restored to original position -->
+    <LinearLayout
+        android:id="@+id/actionButtonsLayout"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:padding="4dp"
+        android:background="?android:attr/colorBackground"
+        android:elevation="4dp">
+
+        <Button
+            android:id="@+id/editButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:text="@string/edit"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:enabled="false" />
+
+        <Button
+            android:id="@+id/moveButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:text="@string/move"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:enabled="false" />
+
+        <Button
+            android:id="@+id/completeButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:text="@string/complete"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:enabled="false" />
+
+        <Button
+            android:id="@+id/deleteButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:text="@string/delete"
+            android:textSize="12sp"
+            android:padding="8dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:enabled="false" />
+
+    </LinearLayout>
+
+    <!-- Empty State TextView -->
+    <TextView
+        android:id="@+id/emptyStateTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/no_tasks"
+        android:textSize="18sp"
+        android:textColor="@android:color/darker_gray"
+        android:gravity="center"
+        android:padding="32dp"
+        android:visibility="gone" />
+
+</LinearLayout>

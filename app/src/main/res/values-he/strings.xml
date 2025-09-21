@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">המשימות שלי</string>
+    <string name="description">תיאור</string>
+    <string name="search">חפש משימות</string>
+    <string name="search_tasks">חפש משימות</string>
+    <string name="clear_search">נקה חיפוש</string>
+    <string name="include_completed">כלול משימות שהושלמו</string>
+    <string name="include_completed_tasks">כלול משימות שהושלמו</string>
+    <string name="no_tasks">אין משימות זמינות</string>
+    <string name="add_task">הוסף משימה</string>
+    <string name="select_task_to_edit">בחר משימה לעריכה</string>
+    <string name="select_task_to_move">בחר משימה להעברה</string>
+    <string name="select_task_to_complete">בחר משימה להשלמה</string>
+    <string name="select_task_to_delete">בחר משימה למחיקה</string>
+    <string name="description_required">תיאור נדרש</string>
+    <string name="delete">מחק</string>
+    <string name="edit">ערוך</string>
+    <string name="move">העבר</string>
+    <string name="complete">השלם</string>
+    <string name="uncomplete">בטל השלמה</string>
+    <string name="category_waiting">בהמתנה</string>
+    <string name="category_completed">הושלם</string>
+    <string name="completed_category_title">הושלם</string>
+    <string name="completed_label">הושלם</string>
+    <string name="recurring">חוזר</string>
+    <string name="reminder">תזכורת</string>
+    <string name="save">שמור</string>
+    <string name="cancel">בטל</string>
+    <string name="when_to_perform">מתי לבצע</string>
+    <string name="task_reminder">תזכורת</string>
+    <string name="snooze">דחה</string>
+    <string name="day_of_week_required">יום בשבוע נדרש</string>
+    <string name="due_date_required">תאריך יעד נדרש</string>
+    <string name="select_date">בחר תאריך</string>
+    <string name="clear_date">נקה תאריך</string>
+    <string name="select_time">בחר שעה</string>
+    <string name="clear_time">נקה שעה</string>
+    <string name="date_label">תאריך</string>
+    <string name="time_label">שעה</string>
+
+    <string-array name="days_of_week">
+        <item>בהמתנה</item>
+        <item>מיידי</item>
+        <item>בקרוב</item>
+        <item>ראשון</item>
+        <item>שני</item>
+        <item>שלישי</item>
+        <item>רביעי</item>
+        <item>חמישי</item>
+        <item>שישי</item>
+        <item>שבת</item>
+    </string-array>
+
+    <string-array name="recurrence_types">
+        <item>יומי</item>
+        <item>שבועי</item>
+        <item>דו-שבועי</item>
+        <item>חודשי</item>
+        <item>שנתי</item>
+    </string-array>
+
+    <string-array name="reminder_options">
+        <item>בזמן המשימה</item>
+        <item>15 דקות לפני</item>
+        <item>30 דקות לפני</item>
+        <item>60 דקות לפני</item>
+    </string-array>
+</resources>

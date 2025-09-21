@@ -1,0 +1,43 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background circle with gradient (simplified for Android) -->
+    <path android:fillColor="#2563EB"
+        android:pathData="M54,8C30,8 8,30 8,54s22,46 46,46s46,-22 46,-46S78,8 54,8z"/>
+    
+    <!-- Clipboard base - centered with proper spacing above and below -->
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M25,20h58c2,0 4,2 4,4v58c0,2 -2,4 -4,4H25c-2,0 -4,-2 -4,-4V24C21,22 23,20 25,20z"/>
+    
+    <!-- Clipboard clip at top - properly positioned -->
+    <path android:fillColor="#64748B"
+        android:pathData="M42,14h24c1,0 2,1 2,2v10c0,1 -1,2 -2,2H42c-1,0 -2,-1 -2,-2V16C40,15 41,14 42,14z"/>
+    <path android:fillColor="#E2E8F0"
+        android:pathData="M47,17h14c1,0 1,1 1,1v5c0,1 -1,1 -1,1H47c-1,0 -1,-1 -1,-1V18C46,17 46,17 47,17z"/>
+    
+    <!-- Checklist items - properly spaced within clipboard -->
+    <!-- Item 1 - Completed -->
+    <path android:fillColor="#10B981"
+        android:pathData="M34,37h7c1,0 2,1 2,2v7c0,1 -1,2 -2,2H34c-1,0 -2,-1 -2,-2V39C32,38 33,37 34,37z"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M36,40L38,42L40,39"/>
+    <path android:fillColor="#CBD5E1"
+        android:pathData="M45,39h30c1,0 2,1 2,2v3c0,1 -1,2 -2,2H45c-1,0 -2,-1 -2,-2V41C43,40 44,39 45,39z"/>
+    
+    <!-- Item 2 - Completed -->
+    <path android:fillColor="#10B981"
+        android:pathData="M34,54h7c1,0 2,1 2,2v7c0,1 -1,2 -2,2H34c-1,0 -2,-1 -2,-2V56C32,55 33,54 34,54z"/>
+    <path android:strokeColor="#FFFFFF" android:strokeWidth="1" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M36,57L38,59L40,56"/>
+    <path android:fillColor="#CBD5E1"
+        android:pathData="M45,56h26c1,0 2,1 2,2v3c0,1 -1,2 -2,2H45c-1,0 -2,-1 -2,-2V58C43,57 44,56 45,56z"/>
+    
+    <!-- Item 3 - Pending -->
+    <path android:fillColor="@android:color/transparent" android:strokeColor="#D1D5DB" android:strokeWidth="1"
+        android:pathData="M34,71h7c1,0 2,1 2,2v7c0,1 -1,2 -2,2H34c-1,0 -2,-1 -2,-2V73C32,72 33,71 34,71z"/>
+    <path android:fillColor="#E2E8F0"
+        android:pathData="M45,74h24c1,0 2,1 2,2v3c0,1 -1,2 -2,2H45c-1,0 -2,-1 -2,-2V76C43,75 44,74 45,74z"/>
+</vector>

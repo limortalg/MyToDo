@@ -1,0 +1,167 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <!-- First row: None and Soon only -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/noneButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="4dp"
+            android:textSize="12sp"
+            android:minHeight="48dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/soonButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:textSize="12sp"
+            android:minHeight="48dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Second row: First 4 weekdays -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/weekday1Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/weekday2Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/weekday3Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/weekday4Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Third row: Last 3 weekdays -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginBottom="8dp">
+
+        <Button
+            android:id="@+id/weekday5Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/weekday6Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:layout_marginEnd="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+        <Button
+            android:id="@+id/weekday7Button"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="2dp"
+            android:textSize="12sp"
+            android:minHeight="40dp"
+            android:padding="2dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+    <!-- Fourth row: מיידי (Immediate) - full width -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center">
+
+        <Button
+            android:id="@+id/immediateButton"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="center"
+            android:textSize="14sp"
+            android:minHeight="56dp"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white" />
+
+    </LinearLayout>
+
+</LinearLayout>
