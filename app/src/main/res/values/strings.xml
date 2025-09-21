@@ -47,6 +47,7 @@
     <string name="error_saving_task">Error saving task. Please try again.</string>
     <string name="task_completed_notification">Task completed: %1$s</string>
     <string name="task_deleted_notification">Task deleted: %1$s</string>
+    <string name="default_web_client_id">YOUR_WEB_CLIENT_ID_HERE</string>
     <string name="playing_test_sound">Playing test sound...</string>
     <string name="error_playing_sound">Error playing sound</string>
     <string name="exact_alarms_required">Exact Alarms Required</string>
