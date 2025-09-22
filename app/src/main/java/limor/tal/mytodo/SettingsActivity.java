@@ -231,6 +231,9 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
                 manualSyncButton.setEnabled(false);
                 manualSyncButton.setText("מסנכרן...");
                 
+                // Reset first sync flag to ensure we download cloud tasks
+                syncManager.resetFirstSyncFlag();
+                
                 syncManager.forceSync(new SyncManager.SyncCallback() {
                     @Override
                     public void onSyncComplete(boolean success, String message) {

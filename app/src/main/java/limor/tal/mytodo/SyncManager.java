@@ -289,6 +289,12 @@ public class SyncManager {
     public void forceSync(SyncCallback callback) {
         syncTasks(callback);
     }
+    
+    // Reset first sync flag (useful for debugging)
+    public void resetFirstSyncFlag() {
+        prefs.edit().putBoolean(PREF_FIRST_SYNC, false).apply();
+        Log.d(TAG, "First sync flag reset");
+    }
 
     // Cleanup
     public void shutdown() {
