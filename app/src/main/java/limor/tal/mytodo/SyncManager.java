@@ -199,8 +199,8 @@ public class SyncManager {
                 }
             }
             
-            // Update local database with cloud changes
-            updateLocalDatabase(tasksToUpdate, tasksToInsert, callback);
+            // Update local database with cloud changes (run on background thread)
+            executorService.execute(() -> updateLocalDatabase(tasksToUpdate, tasksToInsert, callback));
             
         } catch (Exception e) {
             Log.e(TAG, "Merge error", e);
@@ -240,25 +240,28 @@ public class SyncManager {
         firestoreService.loadUserTasks(new FirestoreService.TasksCallback() {
             @Override
             public void onTasksLoaded(List<limor.tal.mytodo.Task> tasks) {
-                try {
-                    // Insert all cloud tasks into local database
-                    for (limor.tal.mytodo.Task task : tasks) {
-                        taskDao.insert(task);
+                // Run database operations on background thread
+                executorService.execute(() -> {
+                    try {
+                        // Insert all cloud tasks into local database
+                        for (limor.tal.mytodo.Task task : tasks) {
+                            taskDao.insert(task);
+                        }
+                        
+                        // Mark first sync as completed
+                        prefs.edit()
+                                .putBoolean(PREF_FIRST_SYNC, true)
+                                .putLong(PREF_LAST_SYNC, System.currentTimeMillis())
+                                .apply();
+                        
+                        Log.d(TAG, "Downloaded " + tasks.size() + " tasks from cloud");
+                        callback.onSyncComplete(true, "First sync completed - " + tasks.size() + " tasks downloaded");
+                        
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to save downloaded tasks", e);
+                        callback.onSyncComplete(false, "Failed to save downloaded tasks: " + e.getMessage());
                     }
-                    
-                    // Mark first sync as completed
-                    prefs.edit()
-                            .putBoolean(PREF_FIRST_SYNC, true)
-                            .putLong(PREF_LAST_SYNC, System.currentTimeMillis())
-                            .apply();
-                    
-                    Log.d(TAG, "Downloaded " + tasks.size() + " tasks from cloud");
-                    callback.onSyncComplete(true, "First sync completed - " + tasks.size() + " tasks downloaded");
-                    
-                } catch (Exception e) {
-                    Log.e(TAG, "Failed to save downloaded tasks", e);
-                    callback.onSyncComplete(false, "Failed to save downloaded tasks: " + e.getMessage());
-                }
+                });
             }
 
             @Override

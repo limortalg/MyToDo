@@ -97,13 +97,20 @@ const Dashboard = ({ taskService, user }) => {
   };
 
   const handleDeleteTask = async (taskId) => {
-    try {
-      await taskService.deleteTask(taskId);
-      showSnackbar('Task deleted successfully', 'success');
-      loadTasks();
-    } catch (error) {
-      console.error('Error deleting task:', error);
-      showSnackbar('Failed to delete task', 'error');
+    // Find the task to get its description
+    const task = tasks.find(t => t.id === taskId);
+    const taskDescription = task ? task.description : 'this task';
+    
+    // Show confirmation dialog
+    if (window.confirm(`Are you sure you want to delete "${taskDescription}"? This action cannot be undone.`)) {
+      try {
+        await taskService.deleteTask(taskId);
+        showSnackbar('Task deleted successfully', 'success');
+        loadTasks();
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        showSnackbar('Failed to delete task', 'error');
+      }
     }
   };
 
