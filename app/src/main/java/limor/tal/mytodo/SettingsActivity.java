@@ -34,7 +34,9 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
     private TextView accountStatusTextView;
     private Button signInOutButton;
     private Button resetLoginButton;
+    private Button manualSyncButton;
     private FirebaseAuthService authService;
+    private SyncManager syncManager;
     private SharedPreferences prefs;
     
     private final ActivityResultLauncher<Intent> soundPickerLauncher = registerForActivityResult(
@@ -87,8 +89,9 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
         
-        // Initialize Firebase Auth
+        // Initialize Firebase Auth and Sync
         authService = new FirebaseAuthService(this);
+        syncManager = new SyncManager(this);
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         
         // Initialize views
@@ -99,6 +102,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         accountStatusTextView = findViewById(R.id.accountStatusTextView);
         signInOutButton = findViewById(R.id.signInOutButton);
         resetLoginButton = findViewById(R.id.resetLoginButton);
+        manualSyncButton = findViewById(R.id.manualSyncButton);
         testSoundButton = findViewById(R.id.testSoundButton);
         
         // Debug: Check what strings are being loaded
@@ -221,6 +225,43 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
             prefs.edit().remove("skipped_login").apply();
             Toast.makeText(this, getString(R.string.reset_login_message), Toast.LENGTH_SHORT).show();
         });
+
+        manualSyncButton.setOnClickListener(v -> {
+            if (authService.isUserSignedIn()) {
+                manualSyncButton.setEnabled(false);
+                manualSyncButton.setText("מסנכרן...");
+                
+                syncManager.forceSync(new SyncManager.SyncCallback() {
+                    @Override
+                    public void onSyncComplete(boolean success, String message) {
+                        runOnUiThread(() -> {
+                            manualSyncButton.setEnabled(true);
+                            manualSyncButton.setText("סנכרן עכשיו");
+                            Toast.makeText(SettingsActivity.this, 
+                                success ? "סנכרון הושלם בהצלחה" : "סנכרון נכשל: " + message, 
+                                Toast.LENGTH_SHORT).show();
+                        });
+                    }
+
+                    @Override
+                    public void onSyncProgress(String message) {
+                        Log.d(TAG, "Manual sync progress: " + message);
+                    }
+                });
+            } else {
+                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        // Shutdown sync manager to prevent memory leaks
+        if (syncManager != null) {
+            syncManager.shutdown();
+            Log.d(TAG, "onDestroy: SyncManager shutdown");
+        }
     }
     
     private void updateAccountStatus() {

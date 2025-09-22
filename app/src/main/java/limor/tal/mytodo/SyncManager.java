@@ -141,16 +141,20 @@ public class SyncManager {
         try {
             callback.onSyncProgress("Merging changes...");
             
-            // Create maps for easier lookup
-            Map<Integer, limor.tal.mytodo.Task> localMap = new HashMap<>();
-            Map<Integer, limor.tal.mytodo.Task> cloudMap = new HashMap<>();
-            
+            // Create maps for easier lookup using firestoreDocumentId
+            Map<String, limor.tal.mytodo.Task> localMap = new HashMap<>();
+            Map<String, limor.tal.mytodo.Task> cloudMap = new HashMap<>();
+
             for (limor.tal.mytodo.Task task : localChanges) {
-                localMap.put(task.id, task);
+                if (task.firestoreDocumentId != null) {
+                    localMap.put(task.firestoreDocumentId, task);
+                }
             }
-            
+
             for (limor.tal.mytodo.Task task : cloudTasks) {
-                cloudMap.put(task.id, task);
+                if (task.firestoreDocumentId != null) {
+                    cloudMap.put(task.firestoreDocumentId, task);
+                }
             }
             
             List<limor.tal.mytodo.Task> tasksToUpdate = new ArrayList<>();
@@ -158,8 +162,8 @@ public class SyncManager {
             
             // Check for conflicts and new tasks
             for (limor.tal.mytodo.Task cloudTask : cloudTasks) {
-                if (localMap.containsKey(cloudTask.id)) {
-                    limor.tal.mytodo.Task localTask = localMap.get(cloudTask.id);
+                if (cloudTask.firestoreDocumentId != null && localMap.containsKey(cloudTask.firestoreDocumentId)) {
+                    limor.tal.mytodo.Task localTask = localMap.get(cloudTask.firestoreDocumentId);
                     
                     // Simple conflict resolution: use the more recently updated task
                     if (cloudTask.completionDate != null && localTask.completionDate != null) {
@@ -179,7 +183,7 @@ public class SyncManager {
             
             // Upload local changes that aren't in cloud
             for (limor.tal.mytodo.Task localTask : localChanges) {
-                if (!cloudMap.containsKey(localTask.id)) {
+                if (localTask.firestoreDocumentId == null || !cloudMap.containsKey(localTask.firestoreDocumentId)) {
                     // This is a new local task, upload it
                     firestoreService.saveTask(localTask, new FirestoreService.FirestoreCallback() {
                         @Override
@@ -274,8 +278,8 @@ public class SyncManager {
         long lastSync = prefs.getLong(PREF_LAST_SYNC, 0);
         long timeSinceLastSync = System.currentTimeMillis() - lastSync;
         
-        // Sync if it's been more than 5 minutes since last sync
-        return timeSinceLastSync > 5 * 60 * 1000;
+        // Sync if it's been more than 1 minute since last sync
+        return timeSinceLastSync > 1 * 60 * 1000;
     }
 
     // Force sync (ignore time check)

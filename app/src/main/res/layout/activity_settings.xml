@@ -72,7 +72,17 @@
             android:text="@string/reset_login"
             android:background="@drawable/rounded_button"
             android:textColor="@android:color/white"
-            android:alpha="0.7" />
+            android:alpha="0.7"
+            android:layout_marginBottom="8dp" />
+
+        <Button
+            android:id="@+id/manualSyncButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="סנכרן עכשיו"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:alpha="0.8" />
 
     </LinearLayout>
 

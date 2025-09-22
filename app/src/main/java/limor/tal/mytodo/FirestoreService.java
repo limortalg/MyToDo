@@ -50,22 +50,46 @@ public class FirestoreService {
         FirestoreTask firestoreTask = FirestoreTask.fromTask(task, userId);
         firestoreTask.updateTimestamp();
 
-        db.collection(COLLECTION_TASKS)
-                .add(firestoreTask.toMap())
-                .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
-                    @Override
-                    public void onSuccess(DocumentReference documentReference) {
-                        Log.d(TAG, "Task saved with ID: " + documentReference.getId());
-                        callback.onSuccess(documentReference.getId());
-                    }
-                })
-                .addOnFailureListener(new OnFailureListener() {
-                    @Override
-                    public void onFailure(Exception e) {
-                        Log.e(TAG, "Error saving task", e);
-                        callback.onError("Failed to save task: " + e.getMessage());
-                    }
-                });
+        if (task.firestoreDocumentId != null) {
+            // Update existing task
+            firestoreTask.documentId = task.firestoreDocumentId;
+            db.collection(COLLECTION_TASKS).document(task.firestoreDocumentId)
+                    .set(firestoreTask.toMap())
+                    .addOnSuccessListener(new OnSuccessListener<Void>() {
+                        @Override
+                        public void onSuccess(Void aVoid) {
+                            Log.d(TAG, "Task updated with ID: " + task.firestoreDocumentId);
+                            callback.onSuccess(task.firestoreDocumentId);
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e(TAG, "Error updating task", e);
+                            callback.onError("Failed to update task: " + e.getMessage());
+                        }
+                    });
+        } else {
+            // Create new task
+            db.collection(COLLECTION_TASKS)
+                    .add(firestoreTask.toMap())
+                    .addOnSuccessListener(new OnSuccessListener<DocumentReference>() {
+                        @Override
+                        public void onSuccess(DocumentReference documentReference) {
+                            Log.d(TAG, "Task saved with ID: " + documentReference.getId());
+                            // Store the document ID back to the task for future syncs
+                            task.firestoreDocumentId = documentReference.getId();
+                            callback.onSuccess(documentReference.getId());
+                        }
+                    })
+                    .addOnFailureListener(new OnFailureListener() {
+                        @Override
+                        public void onFailure(Exception e) {
+                            Log.e(TAG, "Error saving task", e);
+                            callback.onError("Failed to save task: " + e.getMessage());
+                        }
+                    });
+        }
     }
 
     // Update an existing task in Firestore

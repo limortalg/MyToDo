@@ -51,7 +51,7 @@ public class FirestoreTask {
     @Exclude
     public limor.tal.mytodo.Task toTask() {
         limor.tal.mytodo.Task task = new limor.tal.mytodo.Task(description, dueDate, dayOfWeek, isRecurring, recurrenceType, isCompleted, priority);
-        task.id = documentId != null ? Integer.parseInt(documentId) : 0; // Use Firestore document ID
+        task.firestoreDocumentId = this.documentId; // Store Firestore document ID
         task.dueTime = this.dueTime;
         task.completionDate = this.completionDate;
         task.reminderOffset = this.reminderOffset;
