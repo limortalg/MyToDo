@@ -11,8 +11,10 @@ import {
 import { Google as GoogleIcon } from '@mui/icons-material';
 import { signInWithPopup, GoogleAuthProvider } from 'firebase/auth';
 import { auth } from '../firebase';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const LoginPage = () => {
+  const { t, language, toggleLanguage } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -54,12 +56,23 @@ const LoginPage = () => {
         }}
       >
         <Paper elevation={3} sx={{ padding: 4, width: '100%', textAlign: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+            <Button
+              onClick={toggleLanguage}
+              size="small"
+              variant="outlined"
+              sx={{ minWidth: 48, fontSize: '0.875rem', fontWeight: 'bold' }}
+            >
+              {language === 'he' ? 'EN' : 'HE'}
+            </Button>
+          </Box>
+          
           <Typography component="h1" variant="h4" gutterBottom>
-            MyToDo Web
+            {t('MyToDo Web')}
           </Typography>
           
           <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-            Sign in to access your tasks across all devices
+            {t('Sign in to access your tasks across all devices')}
           </Typography>
 
           {error && (
@@ -83,11 +96,11 @@ const LoginPage = () => {
             }}
             fullWidth
           >
-            {loading ? 'Signing in...' : 'Sign in with Google'}
+            {loading ? t('Loading...') : t('Sign in with Google')}
           </Button>
 
           <Typography variant="body2" color="text.secondary">
-            Your tasks will sync automatically with your mobile app
+            {t('Your tasks will sync automatically with your mobile app')}
           </Typography>
         </Paper>
       </Box>

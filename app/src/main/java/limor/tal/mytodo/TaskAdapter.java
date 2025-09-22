@@ -838,9 +838,8 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 dueText = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate);
             } else if (task.dayOfWeek != null && task.dayOfWeek.equals(daysOfWeek[1])) {
                 dueText = daysOfWeek[1]; // Immediate
-            } else if (task.dayOfWeek != null) {
-                dueText = task.dayOfWeek;
             }
+            // Removed dayOfWeek display since it's redundant when task is already in the correct category
             
             if (task.dueTime != null && !task.isCompleted) {
                 // Convert dueTime to HH:mm format, handling both old and new formats

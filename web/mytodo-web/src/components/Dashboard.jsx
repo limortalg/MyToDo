@@ -22,10 +22,12 @@ import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { TaskService } from '../services/TaskService';
 import { Task } from '../models/Task';
-import TaskList from './TaskList';
+import CategorizedTaskList from './CategorizedTaskList';
 import TaskDialog from './TaskDialog';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const Dashboard = ({ taskService, user }) => {
+  const { t, language, toggleLanguage } = useLanguage();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -41,7 +43,22 @@ const Dashboard = ({ taskService, user }) => {
   const loadTasks = async () => {
     try {
       setLoading(true);
+      console.log('🔄 Dashboard: Loading tasks...');
       const userTasks = await taskService.getTasks();
+      console.log('📋 Dashboard: Loaded tasks:', userTasks.length);
+      
+      // Debug: Log all task details
+      userTasks.forEach((task, index) => {
+        console.log(`Task ${index + 1}:`, {
+          id: task.id,
+          description: task.description,
+          isCompleted: task.isCompleted,
+          dueDate: task.dueDate,
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt
+        });
+      });
+      
       setTasks(userTasks);
     } catch (error) {
       console.error('Error loading tasks:', error);
@@ -102,7 +119,7 @@ const Dashboard = ({ taskService, user }) => {
     const taskDescription = task ? task.description : 'this task';
     
     // Show confirmation dialog
-    if (window.confirm(`Are you sure you want to delete "${taskDescription}"? This action cannot be undone.`)) {
+    if (window.confirm(`${t('Are you sure you want to delete this task?')} ${t('This action cannot be undone.')}`)) {
       try {
         await taskService.deleteTask(taskId);
         showSnackbar('Task deleted successfully', 'success');
@@ -134,12 +151,27 @@ const Dashboard = ({ taskService, user }) => {
   };
 
   return (
-    <Box sx={{ flexGrow: 1 }}>
+    <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
       <AppBar position="static">
         <Toolbar>
           <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            MyToDo
+            {t('MyToDo')}
           </Typography>
+          
+          <IconButton
+            color="inherit"
+            onClick={toggleLanguage}
+            sx={{ 
+              mr: 1, 
+              minWidth: 48, 
+              fontSize: '0.875rem', 
+              fontWeight: 'bold',
+              border: '1px solid rgba(255,255,255,0.3)',
+              borderRadius: 1
+            }}
+          >
+            {language === 'he' ? 'EN' : 'HE'}
+          </IconButton>
           
           <IconButton
             color="inherit"
@@ -169,31 +201,31 @@ const Dashboard = ({ taskService, user }) => {
             </MenuItem>
             <MenuItem onClick={handleSignOut}>
               <LogoutIcon sx={{ mr: 1 }} />
-              Sign Out
+              {t('Sign Out')}
             </MenuItem>
           </Menu>
         </Toolbar>
       </AppBar>
 
-      <Container maxWidth="lg" sx={{ mt: 3, mb: 3 }}>
+      <Box sx={{ mb: 3, px: 2, flexGrow: 1 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
           </Alert>
         )}
 
-        <TaskList
-          tasks={tasks}
-          loading={loading}
-          onEditTask={handleEditTask}
-          onDeleteTask={handleDeleteTask}
-          onToggleCompletion={handleToggleCompletion}
-        />
-      </Container>
+          <CategorizedTaskList 
+            tasks={tasks}
+            loading={loading}
+            onEditTask={handleEditTask}
+            onDeleteTask={handleDeleteTask}
+            onToggleCompletion={handleToggleCompletion}
+          />
+      </Box>
 
       <Fab
         color="primary"
-        aria-label="add task"
+        aria-label={t('Add New Task')}
         sx={{ position: 'fixed', bottom: 16, right: 16 }}
         onClick={handleAddTask}
       >

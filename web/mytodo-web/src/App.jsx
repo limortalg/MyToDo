@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
+import Box from '@mui/material/Box';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth } from './firebase';
 import { TaskService } from './services/TaskService';
 import { db } from './firebase';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 // Components
 import LoginPage from './components/LoginPage';
@@ -49,21 +51,25 @@ function App() {
   }
 
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <Router>
-        <Routes>
-          <Route 
-            path="/login" 
-            element={user ? <Navigate to="/" /> : <LoginPage />} 
-          />
-          <Route 
-            path="/" 
-            element={user ? <Dashboard taskService={taskService} user={user} /> : <Navigate to="/login" />} 
-          />
-        </Routes>
-      </Router>
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider theme={theme}>
+        <CssBaseline />
+        <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+          <Router>
+            <Routes>
+              <Route
+                path="/login"
+                element={user ? <Navigate to="/" /> : <LoginPage />}
+              />
+              <Route
+                path="/"
+                element={user ? <Dashboard taskService={taskService} user={user} /> : <Navigate to="/login" />}
+              />
+            </Routes>
+          </Router>
+        </Box>
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
 

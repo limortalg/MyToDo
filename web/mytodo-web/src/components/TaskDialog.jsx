@@ -14,42 +14,59 @@ import {
   Checkbox,
   Grid,
   Box,
-  Typography
+  Typography,
+  IconButton
 } from '@mui/material';
+import ClearIcon from '@mui/icons-material/Clear';
 import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { Task } from '../models/Task';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const TaskDialog = ({ open, onClose, onSave, task }) => {
+  const { t, language, isRTL } = useLanguage();
   const [formData, setFormData] = useState({
     description: '',
     dueDate: null,
     dueTime: null,
-    dayOfWeek: '',
+    whenToPerform: 'Waiting', // When to Perform field
     isRecurring: false,
     recurrenceType: '',
-    priority: 0,
+    priority: 0, // Android calculates this automatically
     reminderOffset: null,
     reminderDays: null
   });
 
   const [errors, setErrors] = useState({});
 
-  const weekDays = [
-    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  const whenToPerformOptions = [
+    { value: 'Waiting', label: t('Waiting') },
+    { value: 'Immediate', label: t('Immediate') },
+    { value: 'Soon', label: t('Soon') },
+    { value: 'Sunday', label: t('Sunday') },
+    { value: 'Monday', label: t('Monday') },
+    { value: 'Tuesday', label: t('Tuesday') },
+    { value: 'Wednesday', label: t('Wednesday') },
+    { value: 'Thursday', label: t('Thursday') },
+    { value: 'Friday', label: t('Friday') },
+    { value: 'Saturday', label: t('Saturday') }
   ];
 
   const recurrenceTypes = [
-    'Daily', 'Weekly', 'Monthly', 'Yearly'
+    { value: 'Daily', label: t('Daily') },
+    { value: 'Weekly', label: t('Weekly') },
+    { value: 'Biweekly', label: t('Biweekly') },
+    { value: 'Monthly', label: t('Monthly') },
+    { value: 'Yearly', label: t('Yearly') }
   ];
 
   const reminderOffsets = [
-    { value: null, label: 'No reminder' },
-    { value: 0, label: 'At due time' },
-    { value: 15, label: '15 minutes before' },
-    { value: 30, label: '30 minutes before' },
-    { value: 60, label: '1 hour before' }
+    { value: null, label: t('No reminder') },
+    { value: 0, label: t('At due time') },
+    { value: 15, label: t('15 minutes before') },
+    { value: 30, label: t('30 minutes before') },
+    { value: 60, label: t('1 hour before') }
   ];
 
   useEffect(() => {
@@ -58,7 +75,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         description: task.description || '',
         dueDate: task.dueDate ? new Date(task.dueDate) : null,
         dueTime: task.dueTime ? new Date(task.dueTime) : null,
-        dayOfWeek: task.dayOfWeek || '',
+        whenToPerform: task.dayOfWeek || 'Waiting',
         isRecurring: task.isRecurring || false,
         recurrenceType: task.recurrenceType || '',
         priority: task.priority || 0,
@@ -70,10 +87,10 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         description: '',
         dueDate: null,
         dueTime: null,
-        dayOfWeek: '',
+        whenToPerform: 'Waiting',
         isRecurring: false,
         recurrenceType: '',
-        priority: 0,
+        priority: 0, // Android calculates this automatically
         reminderOffset: null,
         reminderDays: null
       });
@@ -131,7 +148,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       description: formData.description.trim(),
       dueDate: formData.dueDate ? formData.dueDate.getTime() : null,
       dueTime: formData.dueTime ? formData.dueTime.getTime() : null,
-      dayOfWeek: formData.dayOfWeek || null,
+      dayOfWeek: formData.whenToPerform,
       isRecurring: formData.isRecurring,
       recurrenceType: formData.isRecurring ? formData.recurrenceType : null,
       priority: parseInt(formData.priority),
@@ -149,18 +166,18 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
+      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
         <DialogTitle>
-          {task ? 'Edit Task' : 'Create New Task'}
+          {task ? t('Edit Task') : t('Add New Task')}
         </DialogTitle>
         
-        <DialogContent>
+        <DialogContent sx={{ px: 3, py: 2 }}>
           <Box sx={{ pt: 1 }}>
             <Grid container spacing={2}>
               <Grid item xs={12}>
                 <TextField
                   fullWidth
-                  label="Task Description"
+                  label={t('Task Description')}
                   value={formData.description}
                   onChange={handleChange('description')}
                   error={!!errors.description}
@@ -171,56 +188,124 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <DatePicker
-                  label="Due Date"
-                  value={formData.dueDate}
-                  onChange={handleDateChange('dueDate')}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  alignItems: 'flex-start',
+                  flexDirection: isRTL ? 'row-reverse' : 'row'
+                }}>
+                  <Box sx={{ flex: 1 }}>
+                    <DatePicker
+                      label={t('Due Date')}
+                      value={formData.dueDate}
+                      onChange={handleDateChange('dueDate')}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          fullWidth 
+                          sx={{
+                            '& .MuiInputBase-input': {
+                              textAlign: isRTL ? 'right' : 'left'
+                            },
+                            '& .MuiInputLabel-root': {
+                              transformOrigin: isRTL ? 'top right' : 'top left',
+                              left: isRTL ? 'auto' : 0,
+                              right: isRTL ? 0 : 'auto'
+                            },
+                            '& .MuiInputLabel-shrink': {
+                              transform: isRTL ? 'translate(-14px, -9px) scale(0.75)' : 'translate(14px, -9px) scale(0.75)'
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                  </Box>
+                  {formData.dueDate && (
+                    <IconButton 
+                      onClick={() => handleDateChange('dueDate')(null)}
+                      color="error"
+                      size="small"
+                      sx={{ mt: 1 }}
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  )}
+                </Box>
               </Grid>
 
               <Grid item xs={12} md={6}>
-                <TimePicker
-                  label="Due Time"
-                  value={formData.dueTime}
-                  onChange={handleDateChange('dueTime')}
-                  renderInput={(params) => <TextField {...params} fullWidth />}
-                />
+                <Box sx={{ 
+                  display: 'flex', 
+                  gap: 1, 
+                  alignItems: 'flex-start',
+                  flexDirection: isRTL ? 'row-reverse' : 'row'
+                }}>
+                  <Box sx={{ flex: 1 }}>
+                    <TimePicker
+                      label={t('Due Time')}
+                      value={formData.dueTime}
+                      onChange={(newTime) => {
+                        handleDateChange('dueTime')(newTime);
+                        // Clear reminder when time is removed
+                        if (!newTime) {
+                          handleChange('reminderOffset')(null);
+                        }
+                      }}
+                      renderInput={(params) => (
+                        <TextField 
+                          {...params} 
+                          fullWidth 
+                          sx={{
+                            '& .MuiInputBase-input': {
+                              textAlign: isRTL ? 'right' : 'left'
+                            },
+                            '& .MuiInputLabel-root': {
+                              transformOrigin: isRTL ? 'top right' : 'top left',
+                              left: isRTL ? 'auto' : 0,
+                              right: isRTL ? 0 : 'auto'
+                            },
+                            '& .MuiInputLabel-shrink': {
+                              transform: isRTL ? 'translate(-14px, -9px) scale(0.75)' : 'translate(14px, -9px) scale(0.75)'
+                            }
+                          }}
+                        />
+                      )}
+                    />
+                  </Box>
+                  {formData.dueTime && (
+                    <IconButton 
+                      onClick={() => {
+                        handleDateChange('dueTime')(null);
+                        handleChange('reminderOffset')(null); // Clear reminder when time is cleared
+                      }}
+                      color="error"
+                      size="small"
+                      sx={{ mt: 1 }}
+                    >
+                      <ClearIcon />
+                    </IconButton>
+                  )}
+                </Box>
               </Grid>
 
-              <Grid item xs={12} md={6}>
+              <Grid item xs={12}>
                 <FormControl fullWidth>
-                  <InputLabel>Day of Week</InputLabel>
+                  <InputLabel>{t('When to Perform')}</InputLabel>
                   <Select
-                    value={formData.dayOfWeek}
-                    onChange={handleChange('dayOfWeek')}
-                    label="Day of Week"
+                    value={formData.whenToPerform}
+                    onChange={handleChange('whenToPerform')}
+                    label={t('When to Perform')}
                   >
-                    <MenuItem value="">None</MenuItem>
-                    {weekDays.map((day) => (
-                      <MenuItem key={day} value={day}>
-                        {day}
+                    {whenToPerformOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
                       </MenuItem>
                     ))}
                   </Select>
                 </FormControl>
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Priority</InputLabel>
-                  <Select
-                    value={formData.priority}
-                    onChange={handleChange('priority')}
-                    label="Priority"
-                  >
-                    <MenuItem value={0}>Normal</MenuItem>
-                    <MenuItem value={1}>Low</MenuItem>
-                    <MenuItem value={2}>Medium</MenuItem>
-                    <MenuItem value={3}>High</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
+              {/* Priority is calculated automatically by Android app, removed from web interface */}
 
               <Grid item xs={12}>
                 <FormControlLabel
@@ -230,22 +315,22 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                       onChange={handleCheckboxChange('isRecurring')}
                     />
                   }
-                  label="Recurring Task"
+                  label={t('Recurring Task')}
                 />
               </Grid>
 
               {formData.isRecurring && (
                 <Grid item xs={12} md={6}>
                   <FormControl fullWidth>
-                    <InputLabel>Recurrence Type</InputLabel>
+                    <InputLabel>{t('Recurrence Type')}</InputLabel>
                     <Select
                       value={formData.recurrenceType}
                       onChange={handleChange('recurrenceType')}
-                      label="Recurrence Type"
+                      label={t('Recurrence Type')}
                     >
                       {recurrenceTypes.map((type) => (
-                        <MenuItem key={type} value={type}>
-                          {type}
+                        <MenuItem key={type.value} value={type.value}>
+                          {type.label}
                         </MenuItem>
                       ))}
                     </Select>
@@ -253,32 +338,34 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                 </Grid>
               )}
 
-              <Grid item xs={12} md={6}>
-                <FormControl fullWidth>
-                  <InputLabel>Reminder</InputLabel>
-                  <Select
-                    value={formData.reminderOffset}
-                    onChange={handleChange('reminderOffset')}
-                    label="Reminder"
-                  >
-                    {reminderOffsets.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
+              {formData.dueTime && (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth>
+                    <InputLabel>{t('Reminder')}</InputLabel>
+                    <Select
+                      value={formData.reminderOffset}
+                      onChange={handleChange('reminderOffset')}
+                      label={t('Reminder')}
+                    >
+                      {reminderOffsets.map((option) => (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
             </Grid>
           </Box>
         </DialogContent>
 
         <DialogActions>
           <Button onClick={handleClose}>
-            Cancel
+            {t('Cancel')}
           </Button>
           <Button onClick={handleSave} variant="contained">
-            {task ? 'Update' : 'Create'}
+            {task ? t('Update') : t('Add')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -33,12 +33,12 @@ const TaskList = ({
   onToggleCompletion 
 }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterPriority, setFilterPriority] = useState('all');
+  // Priority filter removed - Android calculates priority automatically
   const [filterStatus, setFilterStatus] = useState('all');
 
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.description.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesPriority = filterPriority === 'all' || task.priority.toString() === filterPriority;
+    const matchesPriority = true; // Priority is calculated automatically by Android
     const matchesStatus = filterStatus === 'all' || 
       (filterStatus === 'completed' && task.isCompleted) ||
       (filterStatus === 'pending' && !task.isCompleted);
@@ -46,17 +46,7 @@ const TaskList = ({
     return matchesSearch && matchesPriority && matchesStatus;
   });
 
-  const getPriorityChip = (priority) => {
-    const priorityMap = {
-      3: { label: 'High', color: 'error' },
-      2: { label: 'Medium', color: 'warning' },
-      1: { label: 'Low', color: 'success' },
-      0: { label: 'Normal', color: 'default' }
-    };
-    
-    const { label, color } = priorityMap[priority] || priorityMap[0];
-    return <Chip label={label} color={color} size="small" />;
-  };
+  // Priority is calculated automatically by Android app
 
   const formatDueDate = (dueDate, dueTime) => {
     if (!dueDate) return null;
@@ -110,22 +100,7 @@ const TaskList = ({
             />
           </Grid>
           
-          <Grid item xs={6} md={3}>
-            <FormControl fullWidth>
-              <InputLabel>Priority</InputLabel>
-              <Select
-                value={filterPriority}
-                onChange={(e) => setFilterPriority(e.target.value)}
-                label="Priority"
-              >
-                <MenuItem value="all">All Priorities</MenuItem>
-                <MenuItem value="3">High</MenuItem>
-                <MenuItem value="2">Medium</MenuItem>
-                <MenuItem value="1">Low</MenuItem>
-                <MenuItem value="0">Normal</MenuItem>
-              </Select>
-            </FormControl>
-          </Grid>
+          {/* Priority filter removed - Android calculates priority automatically */}
           
           <Grid item xs={6} md={3}>
             <FormControl fullWidth>
@@ -175,7 +150,7 @@ const TaskList = ({
                   </Typography>
                   
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
-                    {getPriorityChip(task.priority)}
+                    {/* Priority is calculated automatically by Android app */}
                     
                     {task.dayOfWeek && (
                       <Chip label={task.dayOfWeek} variant="outlined" size="small" />

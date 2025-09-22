@@ -116,7 +116,7 @@ public class TaskViewModel extends AndroidViewModel {
 
         // Always get fresh string resources to handle language changes
         String[] daysOfWeek = getApplication().getResources().getStringArray(R.array.days_of_week);
-        String noneOption = daysOfWeek[0]; // "None" or "ללא"
+        String noneOption = daysOfWeek[0]; // "Waiting" or "בהמתנה"
         String immediateOption = daysOfWeek[1]; // "Immediate" or "מיידי"
         String soonOption = daysOfWeek[2]; // "Soon" or "בקרוב"
         String waitingCategory = getApplication().getString(R.string.category_waiting); // "Waiting" or "בהמתנה"
@@ -602,6 +602,8 @@ public class TaskViewModel extends AndroidViewModel {
                 } else {
                     category = waitingCategory;
                 }
+            } else if (mappedDayOfWeek.equals(noneOption)) {
+                category = waitingCategory;
             } else if (mappedDayOfWeek.equals(immediateOption)) {
                 category = immediateOption;
             } else if (mappedDayOfWeek.equals(soonOption)) {
