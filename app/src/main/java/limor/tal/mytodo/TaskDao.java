@@ -31,4 +31,7 @@ public interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE id = :taskId")
     Task getTaskById(int taskId);
+
+    @Query("SELECT * FROM tasks WHERE completionDate > :timestamp")
+    List<Task> getTasksModifiedSince(long timestamp);
 }

@@ -43,6 +43,8 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import limor.tal.mytodo.AppDatabase;
 import limor.tal.mytodo.TaskDao;
+import limor.tal.mytodo.SyncManager;
+import limor.tal.mytodo.FirebaseAuthService;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -85,6 +87,10 @@ public class MainActivity extends AppCompatActivity {
     private static long lastEditFromReminderTime = 0;
     private static final long MIN_EDIT_INTERVAL = 2000; // 2 seconds minimum between edits
     
+    // Sync-related fields
+    private SyncManager syncManager;
+    private FirebaseAuthService authService;
+    
 
 
     @Override
@@ -104,6 +110,10 @@ public class MainActivity extends AppCompatActivity {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        
+        // Initialize sync services
+        syncManager = new SyncManager(this);
+        authService = new FirebaseAuthService(this);
 
 
 
@@ -281,7 +291,7 @@ public class MainActivity extends AppCompatActivity {
         ImageButton settingsButton = findViewById(R.id.settingsButton);
         if (settingsButton != null) {
             settingsButton.setOnClickListener(v -> {
-                Intent settingsIntent = new Intent(this, ReminderSettingsActivity.class);
+                Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 startActivity(settingsIntent);
             });
         }
@@ -1166,6 +1176,21 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("MyToDo", "showTaskDialog: About to call viewModel.insert for new task: " + newTask.description);
                     viewModel.insert(newTask);
                     Log.d("MyToDo", "showTaskDialog: viewModel.insert called for new task: " + newTask.description + ", id: " + newTask.id);
+                    
+                    // Sync new task to cloud if user is authenticated
+                    if (authService.isUserSignedIn()) {
+                        syncManager.forceSync(new SyncManager.SyncCallback() {
+                            @Override
+                            public void onSyncComplete(boolean success, String message) {
+                                Log.d("MyToDo", "New task sync: " + (success ? "Success" : "Failed") + " - " + message);
+                            }
+
+                            @Override
+                            public void onSyncProgress(String message) {
+                                Log.d("MyToDo", "New task sync progress: " + message);
+                            }
+                        });
+                    }
                 } else {
                     // Cancel existing reminder before updating
                     if (task.reminderOffset != null && task.reminderOffset > 0) {
@@ -1204,6 +1229,21 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("MyToDo", "showTaskDialog: About to call viewModel.update for existing task: " + task.description + ", id: " + task.id);
                     viewModel.update(task);
                     Log.d("MyToDo", "showTaskDialog: viewModel.update called for existing task: " + task.description + ", id: " + task.id);
+                    
+                    // Sync updated task to cloud if user is authenticated
+                    if (authService.isUserSignedIn()) {
+                        syncManager.forceSync(new SyncManager.SyncCallback() {
+                            @Override
+                            public void onSyncComplete(boolean success, String message) {
+                                Log.d("MyToDo", "Task update sync: " + (success ? "Success" : "Failed") + " - " + message);
+                            }
+
+                            @Override
+                            public void onSyncProgress(String message) {
+                                Log.d("MyToDo", "Task update sync progress: " + message);
+                            }
+                        });
+                    }
                 }
                 Log.d("MyToDo", "showTaskDialog: Dismissing dialog");
                 // Log.d("MyToDo", "saveButton: About to call dialog.dismiss()");
@@ -1265,6 +1305,21 @@ public class MainActivity extends AppCompatActivity {
                    viewModel.delete(task);
                    selectedTask = null;
                    updateButtonStates();
+                   
+                   // Sync task deletion to cloud if user is authenticated
+                   if (authService.isUserSignedIn()) {
+                       syncManager.forceSync(new SyncManager.SyncCallback() {
+                           @Override
+                           public void onSyncComplete(boolean success, String message) {
+                               Log.d("MyToDo", "Task deletion sync: " + (success ? "Success" : "Failed") + " - " + message);
+                           }
+
+                           @Override
+                           public void onSyncProgress(String message) {
+                               Log.d("MyToDo", "Task deletion sync progress: " + message);
+                           }
+                       });
+                   }
                    
                    Toast.makeText(this, getString(R.string.task_deleted), Toast.LENGTH_SHORT).show();
                    Log.d("MyToDo", "showDeleteConfirmationDialog: Task deleted successfully: " + task.description);
@@ -1498,6 +1553,22 @@ public class MainActivity extends AppCompatActivity {
                 task.dayOfWeek = newDay;
                 viewModel.update(task);
                 Log.d("MyToDo", "showMoveTaskDialog: Task moved to day: " + newDay + ", id: " + task.id);
+                
+                // Sync task move to cloud if user is authenticated
+                if (authService.isUserSignedIn()) {
+                    syncManager.forceSync(new SyncManager.SyncCallback() {
+                        @Override
+                        public void onSyncComplete(boolean success, String message) {
+                            Log.d("MyToDo", "Task move sync: " + (success ? "Success" : "Failed") + " - " + message);
+                        }
+
+                        @Override
+                        public void onSyncProgress(String message) {
+                            Log.d("MyToDo", "Task move sync progress: " + message);
+                        }
+                    });
+                }
+                
                 // Close the dialog after moving the task
                 dialog.dismiss();
             }
@@ -2036,6 +2107,21 @@ public class MainActivity extends AppCompatActivity {
                 task.completionDate = task.isCompleted ? calendar.getTimeInMillis() : null;
                 viewModel.update(task);
                 Log.d("MyToDo", "onContextItemSelected: Completed task: " + task.description + ", isCompleted: " + task.isCompleted + ", id: " + task.id);
+                
+                // Sync task completion to cloud if user is authenticated
+                if (authService.isUserSignedIn()) {
+                    syncManager.forceSync(new SyncManager.SyncCallback() {
+                        @Override
+                        public void onSyncComplete(boolean success, String message) {
+                            Log.d("MyToDo", "Task completion sync: " + (success ? "Success" : "Failed") + " - " + message);
+                        }
+
+                        @Override
+                        public void onSyncProgress(String message) {
+                            Log.d("MyToDo", "Task completion sync progress: " + message);
+                        }
+                    });
+                }
                 return true;
             case 4: // Delete
                 showDeleteConfirmationDialog(task);
@@ -2103,6 +2189,32 @@ public class MainActivity extends AppCompatActivity {
         } else if (currentIntent != null && "COMPLETE_TASK_FROM_REMINDER".equals(currentIntent.getAction())) {
             Log.d("MyToDo", "onResume: Found pending COMPLETE_TASK_FROM_REMINDER intent, processing it");
             handleCompleteTaskFromReminder(currentIntent);
+        }
+        
+        // Auto-sync when app resumes (if user is authenticated and sync is needed)
+        if (authService.isUserSignedIn() && syncManager.needsSync()) {
+            Log.d("MyToDo", "onResume: Starting auto-sync");
+            syncManager.syncTasks(new SyncManager.SyncCallback() {
+                @Override
+                public void onSyncComplete(boolean success, String message) {
+                    if (success) {
+                        Log.d("MyToDo", "Auto-sync completed: " + message);
+                        // Refresh the task list after successful sync
+                        runOnUiThread(() -> {
+                            if (viewModel != null) {
+                                viewModel.forceRefreshTasks();
+                            }
+                        });
+                    } else {
+                        Log.e("MyToDo", "Auto-sync failed: " + message);
+                    }
+                }
+
+                @Override
+                public void onSyncProgress(String message) {
+                    Log.d("MyToDo", "Sync progress: " + message);
+                }
+            });
         }
         
         // Log.d("MyToDo", "onResume: Stack trace for onResume call:");
@@ -2196,6 +2308,12 @@ public class MainActivity extends AppCompatActivity {
         if (executorService != null && !executorService.isShutdown()) {
             executorService.shutdown();
             Log.d("MyToDo", "onDestroy: ExecutorService shutdown");
+        }
+        
+        // Shutdown sync manager to prevent memory leaks
+        if (syncManager != null) {
+            syncManager.shutdown();
+            Log.d("MyToDo", "onDestroy: SyncManager shutdown");
         }
     }
     

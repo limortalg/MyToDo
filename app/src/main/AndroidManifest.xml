@@ -50,7 +50,7 @@
             android:enabled="true"
             android:exported="false" />
         <activity
-            android:name=".ReminderSettingsActivity"
+            android:name=".SettingsActivity"
             android:exported="false"
             android:theme="@style/AppTheme" />
     </application>

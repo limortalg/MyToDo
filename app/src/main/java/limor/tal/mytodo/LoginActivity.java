@@ -49,6 +49,9 @@ public class LoginActivity extends AppCompatActivity implements FirebaseAuthServ
             return;
         }
 
+        // Show login screen for new users
+        Log.d(TAG, "Showing login screen for new user");
+
         setupSignInButton();
         setupSkipButton();
     }

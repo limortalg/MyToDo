@@ -66,4 +66,19 @@
         <item>30 דקות לפני</item>
         <item>60 דקות לפני</item>
     </string-array>
+    
+    <string name="settings">הגדרות</string>
+    <string name="account_settings">חשבון</string>
+    <string name="sign_in_to_sync">התחבר כדי לסנכרן משימות בין מכשירים</string>
+    <string name="sign_in_with_google">התחבר עם Google</string>
+    <string name="sign_out">התנתק</string>
+    <string name="signed_in_as">מחובר בתור: %1$s</string>
+    <string name="not_signed_in">לא מחובר</string>
+    <string name="signing_in">מתחבר...</string>
+    <string name="sign_out_success">התנתקת בהצלחה</string>
+    <string name="welcome_user">ברוך הבא, %1$s!</string>
+    <string name="sign_in_error">התחברות נכשלה: %1$s</string>
+    <string name="sign_in_start_error">שגיאה בהתחלת ההתחברות. נסה שוב.</string>
+    <string name="reset_login">איפוס התחברות</string>
+    <string name="reset_login_message">זה יציג את מסך ההתחברות שוב בהפעלה הבאה</string>
 </resources>
