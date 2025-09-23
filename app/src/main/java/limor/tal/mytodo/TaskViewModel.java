@@ -717,6 +717,9 @@ public class TaskViewModel extends AndroidViewModel {
         if ("Soon".equals(storedDayOfWeek) || "בקרוב".equals(storedDayOfWeek)) {
             return currentDaysOfWeek[2]; // "Soon" or "בקרוב"
         }
+        if ("Waiting".equals(storedDayOfWeek) || "בהמתנה".equals(storedDayOfWeek)) {
+            return getApplication().getString(R.string.category_waiting);
+        }
         
         String[] englishDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
         String[] hebrewDays = {"ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"};

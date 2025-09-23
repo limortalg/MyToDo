@@ -75,7 +75,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       setFormData({
         description: task.description || '',
         dueDate: task.dueDate ? new Date(task.dueDate) : null,
-        dueTime: task.dueTime ? new Date(task.dueTime) : null,
+        dueTime: task.dueTime ? convertMillisecondsSinceMidnightToTime(task.dueTime) : null,
         whenToPerform: task.dayOfWeek || 'Waiting',
         isRecurring: task.isRecurring || false,
         recurrenceType: task.recurrenceType || '',
@@ -147,7 +147,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
     const taskData = {
       description: formData.description.trim(),
       dueDate: formData.dueDate ? formData.dueDate.getTime() : null,
-      dueTime: formData.dueTime ? formData.dueTime.getTime() : null,
+      dueTime: formData.dueTime ? calculateMillisecondsSinceMidnight(formData.dueTime) : null,
       dayOfWeek: formData.whenToPerform,
       isRecurring: formData.isRecurring,
       recurrenceType: formData.isRecurring ? formData.recurrenceType : null,
@@ -162,6 +162,22 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
   const handleClose = () => {
     setErrors({});
     onClose();
+  };
+
+  // Calculate milliseconds since midnight (matches Android logic)
+  const calculateMillisecondsSinceMidnight = (timeValue) => {
+    const hours = timeValue.getHours();
+    const minutes = timeValue.getMinutes();
+    return hours * 60 * 60 * 1000 + minutes * 60 * 1000;
+  };
+
+  // Convert milliseconds since midnight back to a time object for display
+  const convertMillisecondsSinceMidnightToTime = (milliseconds) => {
+    const hours = Math.floor(milliseconds / (60 * 60 * 1000));
+    const minutes = Math.floor((milliseconds % (60 * 60 * 1000)) / (60 * 1000));
+    const time = new Date();
+    time.setHours(hours, minutes, 0, 0);
+    return time;
   };
 
   // RTL-aware styles
@@ -322,7 +338,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                     >
                       <ClearIcon />
                     </IconButton>
-                    )}
+                  )}
                   </Box>
                   
                   {/* Reminder - under Due Time */}
@@ -376,24 +392,24 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                   >
                     {t('When to Perform')}
                   </Typography>
-                  <FormControl fullWidth>
-                    <Select
-                      value={formData.whenToPerform}
-                      onChange={handleChange('whenToPerform')}
+                <FormControl fullWidth>
+                  <Select
+                    value={formData.whenToPerform}
+                    onChange={handleChange('whenToPerform')}
                       sx={{
                         ...getInputStyle(),
                         '& .MuiSelect-select': {
                           ...getInputStyle()
                         }
                       }}
-                    >
-                      {whenToPerformOptions.map((option) => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
+                  >
+                    {whenToPerformOptions.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
                 </Box>
               </Grid>
 
@@ -410,16 +426,16 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                   >
                     {t('Recurring')}
                   </Typography>
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={formData.isRecurring}
-                        onChange={handleCheckboxChange('isRecurring')}
-                      />
-                    }
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={formData.isRecurring}
+                      onChange={handleCheckboxChange('isRecurring')}
+                    />
+                  }
                     label=""
                     sx={getLabelStyle()}
-                  />
+                />
                 </Box>
               </Grid>
 
@@ -437,24 +453,24 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                     >
                       {t('Recurrence Type')}
                     </Typography>
-                    <FormControl fullWidth>
-                      <Select
-                        value={formData.recurrenceType}
-                        onChange={handleChange('recurrenceType')}
+                  <FormControl fullWidth>
+                    <Select
+                      value={formData.recurrenceType}
+                      onChange={handleChange('recurrenceType')}
                         sx={{
                           ...getInputStyle(),
                           '& .MuiSelect-select': {
                             ...getInputStyle()
                           }
                         }}
-                      >
-                        {recurrenceTypes.map((type) => (
-                          <MenuItem key={type.value} value={type.value}>
-                            {type.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                    >
+                      {recurrenceTypes.map((type) => (
+                        <MenuItem key={type.value} value={type.value}>
+                          {type.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   </Box>
                 </Grid>
               )}

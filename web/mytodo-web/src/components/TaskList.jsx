@@ -49,18 +49,29 @@ const TaskList = ({
   // Priority is calculated automatically by Android app
 
   const formatDueDate = (dueDate, dueTime) => {
-    if (!dueDate) return null;
-    
-    const date = new Date(dueDate);
-    let formatted = format(date, 'MMM dd, yyyy');
-    
-    if (dueTime) {
-      const hours = Math.floor(dueTime / (1000 * 60 * 60));
-      const minutes = Math.floor((dueTime % (1000 * 60 * 60)) / (1000 * 60));
+    if (dueDate && dueTime) {
+      // Both date and time
+      const date = new Date(dueDate);
+      let formatted = format(date, 'MMM dd, yyyy');
+      
+      // dueTime is milliseconds since midnight (matches Android logic)
+      const hours = Math.floor(dueTime / (60 * 60 * 1000));
+      const minutes = Math.floor((dueTime % (60 * 60 * 1000)) / (60 * 1000));
       formatted += ` at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      
+      return formatted;
+    } else if (dueDate) {
+      // Date only
+      const date = new Date(dueDate);
+      return format(date, 'MMM dd, yyyy');
+    } else if (dueTime) {
+      // Time only
+      const hours = Math.floor(dueTime / (60 * 60 * 1000));
+      const minutes = Math.floor((dueTime % (60 * 60 * 1000)) / (60 * 1000));
+      return `at ${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
     }
     
-    return formatted;
+    return null;
   };
 
   if (loading) {

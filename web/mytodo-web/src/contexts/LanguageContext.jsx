@@ -33,10 +33,10 @@ const translations = {
     'Add': 'הוסף',
     'Update': 'עדכן',
     
-    // When to Perform options
-    'Waiting': 'ממתין',
-    'Immediate': 'מיידי',
-    'Soon': 'בקרוב',
+  // When to Perform options
+  'Waiting': 'בהמתנה',
+  'Immediate': 'מיידי',
+  'Soon': 'בקרוב',
     'Sunday': 'יום ראשון',
     'Monday': 'יום שני',
     'Tuesday': 'יום שלישי',

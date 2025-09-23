@@ -21,14 +21,14 @@ export class TaskCategorizer {
 
   // Map day of week to current language (matches Android logic)
   mapDayOfWeekToCurrentLanguage(dayOfWeek, daysOfWeek) {
-    // Handle special categories first
-    if (dayOfWeek === 'Waiting' || dayOfWeek === 'בהמתנה') {
+    // Handle special categories first - web app stores English values like Android
+    if (dayOfWeek === 'Waiting') {
       return this.t('Waiting');
     }
-    if (dayOfWeek === 'Immediate' || dayOfWeek === 'מיידי') {
+    if (dayOfWeek === 'Immediate') {
       return this.t('Immediate');
     }
-    if (dayOfWeek === 'Soon' || dayOfWeek === 'בקרוב') {
+    if (dayOfWeek === 'Soon') {
       return this.t('Soon');
     }
     
@@ -110,18 +110,19 @@ export class TaskCategorizer {
       const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
       console.log('Task dayOfWeek mapped:', task.dayOfWeek, '->', mappedDayOfWeek);
       
-      if (mappedDayOfWeek === noneOption) {
-        // Task has no specific day, check due date or assign to Waiting
+      if (mappedDayOfWeek === waitingCategory) {
+        // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
         if (task.dueDate != null) {
           if (task.dueDate < todayMillis) {
             category = immediateOption;
           } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
+            // Due date within next week - categorize by the day of the due date
             const dueDate = new Date(task.dueDate);
             const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
-            // Map to daysOfWeek array indices (3-9)
-            const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9
+            const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
             category = daysOfWeek[dayIndex];
           } else {
+            // Future due date beyond next week - assign to Waiting
             category = waitingCategory;
           }
         } else {
@@ -136,19 +137,24 @@ export class TaskCategorizer {
         category = mappedDayOfWeek;
       }
     } else if (task.dueDate != null) {
-      // Task has due date but no day of week
+      // Task has due date but no day of week - categorize based on due date (matches Android logic)
       if (task.dueDate < todayMillis) {
         category = immediateOption;
       } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
+        // Due date within next week - categorize by the day of the due date
         const dueDate = new Date(task.dueDate);
         const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
-        const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9
+        const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
         category = daysOfWeek[dayIndex];
       } else {
+        // Future due date beyond next week - assign to Waiting
         category = waitingCategory;
       }
+    } else if (task.dayOfWeek === null || task.dayOfWeek === 'Waiting') {
+      // No due date, no specific day - assign to Waiting
+      category = waitingCategory;
     } else {
-      // No due date, no day of week - assign to Waiting
+      // Fallback - assign to Waiting
       category = waitingCategory;
     }
 
