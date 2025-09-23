@@ -207,7 +207,7 @@ const Dashboard = ({ taskService, user }) => {
         </Toolbar>
       </AppBar>
 
-      <Box sx={{ mb: 3, px: 2, flexGrow: 1 }}>
+      <Container maxWidth="xl" sx={{ mb: 3, flexGrow: 1 }}>
         {error && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {error}
@@ -221,7 +221,7 @@ const Dashboard = ({ taskService, user }) => {
             onDeleteTask={handleDeleteTask}
             onToggleCompletion={handleToggleCompletion}
           />
-      </Box>
+      </Container>
 
       <Fab
         color="primary"

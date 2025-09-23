@@ -26,15 +26,16 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 const TaskDialog = ({ open, onClose, onSave, task }) => {
   const { t, language, isRTL } = useLanguage();
+  
   const [formData, setFormData] = useState({
     description: '',
     dueDate: null,
     dueTime: null,
-    whenToPerform: 'Waiting', // When to Perform field
+    whenToPerform: 'Waiting',
     isRecurring: false,
-    recurrenceType: '',
-    priority: 0, // Android calculates this automatically
-    reminderOffset: null,
+    recurrenceType: 'Daily',
+    priority: 0,
+    reminderOffset: null, // null = "No reminder"
     reminderDays: null
   });
 
@@ -89,9 +90,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         dueTime: null,
         whenToPerform: 'Waiting',
         isRecurring: false,
-        recurrenceType: '',
-        priority: 0, // Android calculates this automatically
-        reminderOffset: null,
+        recurrenceType: 'Daily',
+        priority: 0,
+        reminderOffset: null, // null = "No reminder"
         reminderDays: null
       });
     }
@@ -105,7 +106,6 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       [field]: value
     }));
     
-    // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({
         ...prev,
@@ -164,39 +164,87 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
     onClose();
   };
 
+  // RTL-aware styles
+  const getInputStyle = () => ({
+    direction: isRTL ? 'rtl' : 'ltr',
+    textAlign: isRTL ? 'right' : 'left'
+  });
+
+  const getLabelStyle = () => ({
+    direction: isRTL ? 'rtl' : 'ltr',
+    textAlign: isRTL ? 'right' : 'left'
+  });
+
+  const getDialogStyle = () => ({
+    direction: isRTL ? 'rtl' : 'ltr',
+    '& .MuiDialog-paper': {
+      direction: isRTL ? 'rtl' : 'ltr'
+    }
+  });
+
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Dialog open={open} onClose={handleClose} maxWidth="lg" fullWidth>
-        <DialogTitle>
+      <Dialog 
+        open={open} 
+        onClose={handleClose} 
+        maxWidth="lg" 
+        fullWidth
+        sx={getDialogStyle()}
+      >
+        <DialogTitle sx={getLabelStyle()}>
           {task ? t('Edit Task') : t('Add New Task')}
         </DialogTitle>
         
         <DialogContent sx={{ px: 3, py: 2 }}>
           <Box sx={{ pt: 1 }}>
             <Grid container spacing={2}>
+              {/* Task Description */}
               <Grid item xs={12}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 'bold',
+                      ...getLabelStyle()
+                    }}
+                  >
+                    {t('Task Description')}
+                  </Typography>
                 <TextField
                   fullWidth
-                  label={t('Task Description')}
+                    multiline
+                    rows={3}
                   value={formData.description}
                   onChange={handleChange('description')}
                   error={!!errors.description}
                   helperText={errors.description}
-                  multiline
-                  rows={3}
-                />
+                    sx={{
+                      ...getInputStyle(),
+                      '& .MuiInputBase-root': {
+                        ...getInputStyle()
+                      }
+                    }}
+                  />
+                </Box>
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  alignItems: 'flex-start',
-                  flexDirection: isRTL ? 'row-reverse' : 'row'
-                }}>
+              {/* Due Date */}
+              <Grid item xs={4} md={4}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 'bold',
+                      ...getLabelStyle()
+                    }}
+                  >
+                    {t('Due Date')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Box sx={{ flex: 1 }}>
                     <DatePicker
-                      label={t('Due Date')}
                       value={formData.dueDate}
                       onChange={handleDateChange('dueDate')}
                       renderInput={(params) => (
@@ -204,16 +252,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                           {...params} 
                           fullWidth 
                           sx={{
-                            '& .MuiInputBase-input': {
-                              textAlign: isRTL ? 'right' : 'left'
-                            },
-                            '& .MuiInputLabel-root': {
-                              transformOrigin: isRTL ? 'top right' : 'top left',
-                              left: isRTL ? 'auto' : 0,
-                              right: isRTL ? 0 : 'auto'
-                            },
-                            '& .MuiInputLabel-shrink': {
-                              transform: isRTL ? 'translate(-14px, -9px) scale(0.75)' : 'translate(14px, -9px) scale(0.75)'
+                              ...getInputStyle(),
+                              '& .MuiInputBase-root': {
+                                ...getInputStyle()
                             }
                           }}
                         />
@@ -225,28 +266,33 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                       onClick={() => handleDateChange('dueDate')(null)}
                       color="error"
                       size="small"
-                      sx={{ mt: 1 }}
                     >
                       <ClearIcon />
                     </IconButton>
                   )}
+                  </Box>
                 </Box>
               </Grid>
 
-              <Grid item xs={12} md={6}>
-                <Box sx={{ 
-                  display: 'flex', 
-                  gap: 1, 
-                  alignItems: 'flex-start',
-                  flexDirection: isRTL ? 'row-reverse' : 'row'
-                }}>
+              {/* Due Time */}
+              <Grid item xs={4} md={4}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 'bold',
+                      ...getLabelStyle()
+                    }}
+                  >
+                    {t('Due Time')}
+                  </Typography>
+                  <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Box sx={{ flex: 1 }}>
                     <TimePicker
-                      label={t('Due Time')}
                       value={formData.dueTime}
                       onChange={(newTime) => {
                         handleDateChange('dueTime')(newTime);
-                        // Clear reminder when time is removed
                         if (!newTime) {
                           handleChange('reminderOffset')(null);
                         }
@@ -256,16 +302,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                           {...params} 
                           fullWidth 
                           sx={{
-                            '& .MuiInputBase-input': {
-                              textAlign: isRTL ? 'right' : 'left'
-                            },
-                            '& .MuiInputLabel-root': {
-                              transformOrigin: isRTL ? 'top right' : 'top left',
-                              left: isRTL ? 'auto' : 0,
-                              right: isRTL ? 0 : 'auto'
-                            },
-                            '& .MuiInputLabel-shrink': {
-                              transform: isRTL ? 'translate(-14px, -9px) scale(0.75)' : 'translate(14px, -9px) scale(0.75)'
+                              ...getInputStyle(),
+                              '& .MuiInputBase-root': {
+                                ...getInputStyle()
                             }
                           }}
                         />
@@ -276,91 +315,166 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                     <IconButton 
                       onClick={() => {
                         handleDateChange('dueTime')(null);
-                        handleChange('reminderOffset')(null); // Clear reminder when time is cleared
+                          handleChange('reminderOffset')(null);
                       }}
                       color="error"
                       size="small"
-                      sx={{ mt: 1 }}
                     >
                       <ClearIcon />
                     </IconButton>
+                    )}
+                  </Box>
+                  
+                  {/* Reminder - under Due Time */}
+                  {formData.dueTime && (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography 
+                        variant="body2" 
+                        sx={{ 
+                          mb: 1, 
+                          fontWeight: 'bold',
+                          ...getLabelStyle()
+                        }}
+                      >
+                        {t('Reminder')}
+                      </Typography>
+                      <FormControl fullWidth>
+                        <Select
+                          value={formData.reminderOffset}
+                          onChange={handleChange('reminderOffset')}
+                          displayEmpty
+                          sx={{
+                            ...getInputStyle(),
+                            '& .MuiSelect-select': {
+                              ...getInputStyle()
+                            }
+                          }}
+                        >
+                          {reminderOffsets.map((option) => (
+                            <MenuItem key={option.value} value={option.value}>
+                              {option.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                      </FormControl>
+                    </Box>
                   )}
+                  
                 </Box>
               </Grid>
 
-              <Grid item xs={12}>
-                <FormControl fullWidth>
-                  <InputLabel>{t('When to Perform')}</InputLabel>
-                  <Select
-                    value={formData.whenToPerform}
-                    onChange={handleChange('whenToPerform')}
-                    label={t('When to Perform')}
+              {/* When to Perform */}
+              <Grid item xs={12} md={6}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 'bold',
+                      ...getLabelStyle()
+                    }}
                   >
-                    {whenToPerformOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              {/* Priority is calculated automatically by Android app, removed from web interface */}
-
-              <Grid item xs={12}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={formData.isRecurring}
-                      onChange={handleCheckboxChange('isRecurring')}
-                    />
-                  }
-                  label={t('Recurring Task')}
-                />
-              </Grid>
-
-              {formData.isRecurring && (
-                <Grid item xs={12} md={6}>
+                    {t('When to Perform')}
+                  </Typography>
                   <FormControl fullWidth>
-                    <InputLabel>{t('Recurrence Type')}</InputLabel>
                     <Select
-                      value={formData.recurrenceType}
-                      onChange={handleChange('recurrenceType')}
-                      label={t('Recurrence Type')}
+                      value={formData.whenToPerform}
+                      onChange={handleChange('whenToPerform')}
+                      sx={{
+                        ...getInputStyle(),
+                        '& .MuiSelect-select': {
+                          ...getInputStyle()
+                        }
+                      }}
                     >
-                      {recurrenceTypes.map((type) => (
-                        <MenuItem key={type.value} value={type.value}>
-                          {type.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-              )}
-
-              {formData.dueTime && (
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>{t('Reminder')}</InputLabel>
-                    <Select
-                      value={formData.reminderOffset}
-                      onChange={handleChange('reminderOffset')}
-                      label={t('Reminder')}
-                    >
-                      {reminderOffsets.map((option) => (
+                      {whenToPerformOptions.map((option) => (
                         <MenuItem key={option.value} value={option.value}>
                           {option.label}
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
+                </Box>
+              </Grid>
+
+              {/* Recurring Task Checkbox */}
+              <Grid item xs={12} md={6}>
+                <Box>
+                  <Typography 
+                    variant="body2" 
+                    sx={{ 
+                      mb: 1, 
+                      fontWeight: 'bold',
+                      ...getLabelStyle()
+                    }}
+                  >
+                    {t('Recurring')}
+                  </Typography>
+                  <FormControlLabel
+                    control={
+                      <Checkbox
+                        checked={formData.isRecurring}
+                        onChange={handleCheckboxChange('isRecurring')}
+                      />
+                    }
+                    label=""
+                    sx={getLabelStyle()}
+                  />
+                </Box>
+              </Grid>
+
+              {/* Recurrence Type and Reminder - aligned side by side */}
+              {formData.isRecurring && (
+                <Grid item xs={12} md={6}>
+                  <Box>
+                    <Typography 
+                      variant="body2" 
+                      sx={{ 
+                        mb: 1, 
+                        fontWeight: 'bold',
+                        ...getLabelStyle()
+                      }}
+                    >
+                      {t('Recurrence Type')}
+                    </Typography>
+                    <FormControl fullWidth>
+                      <Select
+                        value={formData.recurrenceType}
+                        onChange={handleChange('recurrenceType')}
+                        sx={{
+                          ...getInputStyle(),
+                          '& .MuiSelect-select': {
+                            ...getInputStyle()
+                          }
+                        }}
+                      >
+                        {recurrenceTypes.map((type) => (
+                          <MenuItem key={type.value} value={type.value}>
+                            {type.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </Box>
                 </Grid>
               )}
+
+              {/* Spacer when not recurring to maintain alignment */}
+              {!formData.isRecurring && (
+                <Grid item xs={12} md={6}>
+                  <Box />
+                </Grid>
+              )}
+
+
             </Grid>
           </Box>
         </DialogContent>
 
-        <DialogActions>
+        <DialogActions sx={{ 
+          flexDirection: isRTL ? 'row-reverse' : 'row',
+          gap: 1
+        }}>
           <Button onClick={handleClose}>
             {t('Cancel')}
           </Button>

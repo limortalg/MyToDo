@@ -1,6 +1,7 @@
 package limor.tal.mytodo;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.Context;
 import android.content.SharedPreferences;
@@ -35,6 +36,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
     private Button signInOutButton;
     private Button resetLoginButton;
     private Button manualSyncButton;
+    private Button downloadFromCloudButton;
     private FirebaseAuthService authService;
     private SyncManager syncManager;
     private SharedPreferences prefs;
@@ -103,6 +105,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         signInOutButton = findViewById(R.id.signInOutButton);
         resetLoginButton = findViewById(R.id.resetLoginButton);
         manualSyncButton = findViewById(R.id.manualSyncButton);
+        downloadFromCloudButton = findViewById(R.id.downloadFromCloudButton);
         testSoundButton = findViewById(R.id.testSoundButton);
         
         // Debug: Check what strings are being loaded
@@ -251,6 +254,41 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
                         Log.d(TAG, "Manual sync progress: " + message);
                     }
                 });
+            } else {
+                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
+            }
+        });
+
+        downloadFromCloudButton.setOnClickListener(v -> {
+            if (authService.isUserSignedIn()) {
+                // Show confirmation dialog
+                new AlertDialog.Builder(this)
+                    .setTitle("מחיקת נתונים מקומיים")
+                    .setMessage("פעולה זו תמחק את כל המשימות המקומיות ותוריד את הנתונים מהענן. האם להמשיך?")
+                    .setPositiveButton("כן", (dialog, which) -> {
+                        downloadFromCloudButton.setEnabled(false);
+                        downloadFromCloudButton.setText("מוריד מהענן...");
+                        
+                        syncManager.forceDownloadFromCloud(new SyncManager.SyncCallback() {
+                            @Override
+                            public void onSyncComplete(boolean success, String message) {
+                                runOnUiThread(() -> {
+                                    downloadFromCloudButton.setEnabled(true);
+                                    downloadFromCloudButton.setText("הורד מהענן (מחק מקומי)");
+                                    Toast.makeText(SettingsActivity.this, 
+                                        success ? "הורדה מהענן הושלמה בהצלחה" : "הורדה מהענן נכשלה: " + message, 
+                                        Toast.LENGTH_SHORT).show();
+                                });
+                            }
+
+                            @Override
+                            public void onSyncProgress(String message) {
+                                Log.d(TAG, "Download from cloud progress: " + message);
+                            }
+                        });
+                    })
+                    .setNegativeButton("ביטול", null)
+                    .show();
             } else {
                 Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
             }

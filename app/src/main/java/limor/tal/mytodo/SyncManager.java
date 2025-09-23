@@ -381,6 +381,81 @@ public class SyncManager {
         Log.d(TAG, "First sync flag reset");
     }
 
+    // Clear all local tasks and reset sync state (useful when starting fresh)
+    public void clearLocalDataAndResetSync() {
+        executorService.execute(() -> {
+            try {
+                // Clear all local tasks
+                taskDao.deleteAllTasks();
+                
+                // Reset sync preferences
+                prefs.edit()
+                    .putBoolean(PREF_FIRST_SYNC, false)
+                    .remove(PREF_LAST_SYNC)
+                    .apply();
+                
+                Log.d(TAG, "Local data cleared and sync state reset");
+            } catch (Exception e) {
+                Log.e(TAG, "Error clearing local data", e);
+            }
+        });
+    }
+
+    // Force download from cloud (ignore local data)
+    public void forceDownloadFromCloud(SyncCallback callback) {
+        if (!firestoreService.isUserAuthenticated()) {
+            callback.onSyncComplete(false, "User not authenticated");
+            return;
+        }
+
+        executorService.execute(() -> {
+            try {
+                callback.onSyncProgress("Downloading from cloud...");
+                
+                // Clear local data first
+                taskDao.deleteAllTasks();
+                
+                // Download all tasks from cloud
+                firestoreService.loadUserTasks(new FirestoreService.TasksCallback() {
+                    @Override
+                    public void onTasksLoaded(List<limor.tal.mytodo.Task> cloudTasks) {
+                        executorService.execute(() -> {
+                            try {
+                                // Insert all cloud tasks into local database
+                                for (limor.tal.mytodo.Task task : cloudTasks) {
+                                    taskDao.insert(task);
+                                }
+                                
+                                // Mark first sync as completed
+                                prefs.edit()
+                                        .putBoolean(PREF_FIRST_SYNC, true)
+                                        .putLong(PREF_LAST_SYNC, System.currentTimeMillis())
+                                        .apply();
+                                
+                                Log.d(TAG, "Downloaded " + cloudTasks.size() + " tasks from cloud");
+                                callback.onSyncComplete(true, "Downloaded " + cloudTasks.size() + " tasks from cloud");
+                                
+                            } catch (Exception e) {
+                                Log.e(TAG, "Failed to save downloaded tasks", e);
+                                callback.onSyncComplete(false, "Failed to save downloaded tasks: " + e.getMessage());
+                            }
+                        });
+                    }
+
+                    @Override
+                    public void onError(String error) {
+                        Log.e(TAG, "Failed to download cloud tasks: " + error);
+                        callback.onSyncComplete(false, "Failed to download cloud tasks: " + error);
+                    }
+                });
+                
+            } catch (Exception e) {
+                Log.e(TAG, "Force download error", e);
+                callback.onSyncComplete(false, "Force download error: " + e.getMessage());
+            }
+        });
+    }
+
     // Cleanup
     public void shutdown() {
         if (executorService != null && !executorService.isShutdown()) {

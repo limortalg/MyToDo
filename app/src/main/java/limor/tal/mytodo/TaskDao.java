@@ -34,4 +34,7 @@ public interface TaskDao {
 
     @Query("SELECT * FROM tasks WHERE completionDate > :timestamp")
     List<Task> getTasksModifiedSince(long timestamp);
+
+    @Query("DELETE FROM tasks")
+    void deleteAllTasks();
 }

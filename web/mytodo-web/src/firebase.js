@@ -4,8 +4,8 @@ import { getFirestore } from 'firebase/firestore';
 
 // Firebase configuration - using the web app config from Firebase Console
 const firebaseConfig = {
-  apiKey: "AIzaSyBmAknTEJ8-u2JFWBg6alwkW4V8-DqDKfU",
-  authDomain: "familysync-app-470820.firebaseapp.com",
+  apiKey: "AIzaSyCQIxjw-pEflsYbO7nLAO7tbY_NFRfLjho",
+  authDomain: "mytodo-app-470820-7e068.web.app",
   projectId: "familysync-app-470820",
   storageBucket: "familysync-app-470820.firebasestorage.app",
   messagingSenderId: "382070971886",

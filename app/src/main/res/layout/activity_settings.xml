@@ -84,6 +84,16 @@
             android:textColor="@android:color/white"
             android:alpha="0.8" />
 
+        <Button
+            android:id="@+id/downloadFromCloudButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="הורד מהענן (מחק מקומי)"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:alpha="0.8"
+            android:layout_marginTop="8dp" />
+
     </LinearLayout>
 
     <!-- Sound Settings Section -->

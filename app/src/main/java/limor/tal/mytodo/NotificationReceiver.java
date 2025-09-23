@@ -67,7 +67,11 @@ public class NotificationReceiver extends BroadcastReceiver {
             serviceIntent.putExtra("task_day", intent.getStringExtra("task_day"));
             
             try {
-                context.startForegroundService(serviceIntent);
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent);
+                } else {
+                    context.startService(serviceIntent);
+                }
                 Log.d("MyToDo", "Started ReminderService from NotificationReceiver for task: " + taskDescription);
             } catch (Exception e) {
                 Log.e("MyToDo", "Failed to start ReminderService, falling back to basic notification", e);
