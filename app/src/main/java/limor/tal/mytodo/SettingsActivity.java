@@ -37,6 +37,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
     private Button resetLoginButton;
     private Button manualSyncButton;
     private Button downloadFromCloudButton;
+    private Button testFirebaseButton;
     private FirebaseAuthService authService;
     private SyncManager syncManager;
     private SharedPreferences prefs;
@@ -106,6 +107,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         resetLoginButton = findViewById(R.id.resetLoginButton);
         manualSyncButton = findViewById(R.id.manualSyncButton);
         downloadFromCloudButton = findViewById(R.id.downloadFromCloudButton);
+        testFirebaseButton = findViewById(R.id.testFirebaseButton);
         testSoundButton = findViewById(R.id.testSoundButton);
         
         // Debug: Check what strings are being loaded
@@ -289,6 +291,15 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
                     })
                     .setNegativeButton("ביטול", null)
                     .show();
+            } else {
+                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
+            }
+        });
+        
+        testFirebaseButton.setOnClickListener(v -> {
+            if (authService.isUserSignedIn()) {
+                Toast.makeText(this, "בודק חיבור Firebase... בדוק את הלוגים", Toast.LENGTH_LONG).show();
+                syncManager.testFirebaseConnection();
             } else {
                 Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
             }

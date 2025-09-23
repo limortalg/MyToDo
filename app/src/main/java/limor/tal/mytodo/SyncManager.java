@@ -37,6 +37,34 @@ public class SyncManager {
         this.executorService = Executors.newSingleThreadExecutor();
         this.prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
     }
+    
+    // Test Firebase connection to diagnose API key issues
+    public void testFirebaseConnection() {
+        Log.d(TAG, "Testing Firebase connection...");
+        if (!firestoreService.isUserAuthenticated()) {
+            Log.e(TAG, "Firebase connection test failed: User not authenticated");
+            return;
+        }
+        
+        Log.d(TAG, "Firebase connection test: User is authenticated");
+        Log.d(TAG, "Firebase connection test: Attempting to read from Firestore...");
+        
+        // Try a simple Firestore read to test the connection
+        firestoreService.getAllTasksFromFirestore(new FirestoreService.FirestoreCallback<List<Task>>() {
+            @Override
+            public void onSuccess(List<Task> tasks) {
+                Log.d(TAG, "Firebase connection test: SUCCESS - Retrieved " + tasks.size() + " tasks from Firestore");
+            }
+            
+            @Override
+            public void onFailure(Exception e) {
+                Log.e(TAG, "Firebase connection test: FAILED - " + e.getMessage());
+                if (e.getMessage() != null && e.getMessage().contains("API_KEY_SERVICE_BLOCKED")) {
+                    Log.e(TAG, "Firebase connection test: API key is blocked - check Firebase console API restrictions");
+                }
+            }
+        });
+    }
 
     // Main sync method - handles bidirectional sync
     public void syncTasks(SyncCallback callback) {
@@ -44,6 +72,9 @@ public class SyncManager {
             callback.onSyncComplete(false, "User not authenticated");
             return;
         }
+        
+        // Test Firebase connection before proceeding with sync
+        testFirebaseConnection();
 
         executorService.execute(() -> {
             try {

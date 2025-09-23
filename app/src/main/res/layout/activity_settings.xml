@@ -94,6 +94,16 @@
             android:alpha="0.8"
             android:layout_marginTop="8dp" />
 
+        <Button
+            android:id="@+id/testFirebaseButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="בדוק חיבור Firebase"
+            android:background="@drawable/rounded_button"
+            android:textColor="@android:color/white"
+            android:alpha="0.7"
+            android:layout_marginTop="8dp" />
+
     </LinearLayout>
 
     <!-- Sound Settings Section -->
