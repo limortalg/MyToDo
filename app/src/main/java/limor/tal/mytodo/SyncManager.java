@@ -50,16 +50,16 @@ public class SyncManager {
         Log.d(TAG, "Firebase connection test: Attempting to read from Firestore...");
         
         // Try a simple Firestore read to test the connection
-        firestoreService.getAllTasksFromFirestore(new FirestoreService.FirestoreCallback<List<Task>>() {
+        firestoreService.loadUserTasks(new FirestoreService.TasksCallback() {
             @Override
-            public void onSuccess(List<Task> tasks) {
+            public void onTasksLoaded(List<Task> tasks) {
                 Log.d(TAG, "Firebase connection test: SUCCESS - Retrieved " + tasks.size() + " tasks from Firestore");
             }
             
             @Override
-            public void onFailure(Exception e) {
-                Log.e(TAG, "Firebase connection test: FAILED - " + e.getMessage());
-                if (e.getMessage() != null && e.getMessage().contains("API_KEY_SERVICE_BLOCKED")) {
+            public void onError(String error) {
+                Log.e(TAG, "Firebase connection test: FAILED - " + error);
+                if (error != null && error.contains("API_KEY_SERVICE_BLOCKED")) {
                     Log.e(TAG, "Firebase connection test: API key is blocked - check Firebase console API restrictions");
                 }
             }
