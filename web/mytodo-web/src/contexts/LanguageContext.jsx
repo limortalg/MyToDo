@@ -68,6 +68,7 @@ const translations = {
     'Status': 'סטטוס',
     'Recurring': 'חוזר',
     'Due': 'תאריך יעד',
+    'Time': 'שעה',
     
     // Categories
     'Today': 'היום',
@@ -154,6 +155,7 @@ const translations = {
     'Status': 'Status',
     'Recurring': 'Recurring',
     'Due': 'Due',
+    'Time': 'Time',
     
     // Categories
     'Today': 'Today',

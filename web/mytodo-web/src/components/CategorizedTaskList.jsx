@@ -71,26 +71,55 @@ const CategorizedTaskList = ({
   };
 
   const formatDueDate = (dueDate, dueTime) => {
-    if (!dueDate) return null;
-    
-    const date = new Date(dueDate);
-    // Use locale-aware date formatting
     const isHebrew = language === 'he';
-    const dateOptions = { 
-      year: 'numeric', 
-      month: isHebrew ? '2-digit' : 'short', 
-      day: '2-digit' 
-    };
-    let formatted = date.toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', dateOptions);
     
-    if (dueTime) {
-      const hours = Math.floor(dueTime / (1000 * 60 * 60));
-      const minutes = Math.floor((dueTime % (1000 * 60 * 60)) / (1000 * 60));
+    if (dueDate && dueTime) {
+      // Both date and time
+      const date = new Date(dueDate);
+      // Use locale-aware date formatting
+      const dateOptions = { 
+        year: 'numeric', 
+        month: isHebrew ? '2-digit' : 'short', 
+        day: '2-digit' 
+      };
+      let formatted = date.toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', dateOptions);
+      
+      // dueTime is milliseconds since midnight (matches Android logic)
+      const hours = Math.floor(dueTime / (60 * 60 * 1000));
+      const minutes = Math.floor((dueTime % (60 * 60 * 1000)) / (60 * 1000));
       const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
       formatted += isHebrew ? ` ${timeStr}` : ` at ${timeStr}`;
+      
+      return formatted;
+    } else if (dueDate) {
+      // Date only
+      const date = new Date(dueDate);
+      const dateOptions = { 
+        year: 'numeric', 
+        month: isHebrew ? '2-digit' : 'short', 
+        day: '2-digit' 
+      };
+      return date.toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', dateOptions);
+    } else if (dueTime) {
+      // Time only
+      const hours = Math.floor(dueTime / (60 * 60 * 1000));
+      const minutes = Math.floor((dueTime % (60 * 60 * 1000)) / (60 * 1000));
+      const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      return isHebrew ? timeStr : `at ${timeStr}`;
     }
     
-    return formatted;
+    return null;
+  };
+
+  const getDueLabel = (dueDate, dueTime) => {
+    if (dueDate && dueTime) {
+      return t('Due'); // Both date and time
+    } else if (dueDate) {
+      return t('Due'); // Date only
+    } else if (dueTime) {
+      return t('Time'); // Time only
+    }
+    return null;
   };
 
   const getCategoryDisplayName = (categoryName) => {
@@ -295,7 +324,7 @@ const CategorizedTaskList = ({
 
                             {formatDueDate(task.dueDate, task.dueTime) && (
                               <Typography variant="caption" color="text.secondary">
-                                {t('Due')}: {formatDueDate(task.dueDate, task.dueTime)}
+                                {getDueLabel(task.dueDate, task.dueTime)}: {formatDueDate(task.dueDate, task.dueTime)}
                               </Typography>
                             )}
                           </Box>
