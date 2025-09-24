@@ -340,7 +340,7 @@ public class SyncManager {
                 }
                 
                 if (localTaskToUpdate != null) {
-                    // Update the local task with cloud data (preserve local ID)
+                    // Update the local task with cloud data (preserve local ID and local-only fields)
                     localTaskToUpdate.description = cloudTask.description;
                     localTaskToUpdate.dueDate = cloudTask.dueDate;
                     localTaskToUpdate.dueTime = cloudTask.dueTime;
@@ -350,8 +350,16 @@ public class SyncManager {
                     localTaskToUpdate.isCompleted = cloudTask.isCompleted;
                     localTaskToUpdate.priority = cloudTask.priority;
                     localTaskToUpdate.completionDate = cloudTask.completionDate;
-                    localTaskToUpdate.reminderOffset = cloudTask.reminderOffset;
-                    localTaskToUpdate.reminderDays = cloudTask.reminderDays;
+                    // Preserve local reminder settings if they exist (Android-specific feature)
+                    if (localTaskToUpdate.reminderOffset != null) {
+                        Log.d(TAG, "Preserving local reminder settings for task: " + localTaskToUpdate.description + 
+                              " (reminderOffset: " + localTaskToUpdate.reminderOffset + ", reminderDays: " + localTaskToUpdate.reminderDays + ")");
+                        // Keep local reminder settings, don't overwrite with cloud data
+                    } else {
+                        // Only use cloud reminder settings if local task has no reminders
+                        localTaskToUpdate.reminderOffset = cloudTask.reminderOffset;
+                        localTaskToUpdate.reminderDays = cloudTask.reminderDays;
+                    }
                     localTaskToUpdate.manualPosition = cloudTask.manualPosition;
                     
                     taskDao.update(localTaskToUpdate);
