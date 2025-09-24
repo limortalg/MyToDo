@@ -3,7 +3,7 @@ export class TaskCategorizer {
   constructor(t) {
     this.t = t || ((key) => key); // Fallback to key if no translation function
     this.daysOfWeek = [
-      this.t('None'), this.t('Immediate'), this.t('Soon'), this.t('Sunday'), this.t('Monday'), this.t('Tuesday'), 
+      this.t('Waiting'), this.t('Immediate'), this.t('Soon'), this.t('Sunday'), this.t('Monday'), this.t('Tuesday'), 
       this.t('Wednesday'), this.t('Thursday'), this.t('Friday'), this.t('Saturday')
     ];
     
@@ -78,7 +78,7 @@ export class TaskCategorizer {
   // Process a single task and categorize it
   processSingleTask(task, immediateTasks, soonTasks, waitingTasks, completedTasks, dayTasks, 
                    daysOfWeek, dayIndices, immediateOption, soonOption, waitingCategory, 
-                   completedCategory, noneOption, todayMillis, nextWeekMillis) {
+                   completedCategory, noneOption, todayMillis, nextWeekMillis, dayIndexToTaskIndex) {
     
 
     // Check if this is a daily recurring task
@@ -102,6 +102,8 @@ export class TaskCategorizer {
       } else {
         // Always map dayOfWeek to current language first
         const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
+        console.log('DEBUG: Task dayOfWeek:', task.dayOfWeek, 'mapped to:', mappedDayOfWeek);
+        console.log('DEBUG: daysOfWeek array:', daysOfWeek);
         
         if (mappedDayOfWeek === waitingCategory) {
           // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
@@ -128,7 +130,27 @@ export class TaskCategorizer {
         } else {
           // Task has a specific day of the week
           category = mappedDayOfWeek;
+          console.log('DEBUG: Assigned to specific day category:', category);
         }
+      }
+    } else if (task.dayOfWeek === null) {
+      // Task has null dayOfWeek (Waiting category) - check due date or assign to Waiting
+      if (task.dueDate != null) {
+        if (task.dueDate < todayMillis) {
+          category = immediateOption;
+        } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
+          // Due date within next week - categorize by the day of the due date
+          const dueDate = new Date(task.dueDate);
+          const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
+          const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
+          category = daysOfWeek[dayIndex];
+        } else {
+          // Future due date beyond next week - assign to Waiting
+          category = waitingCategory;
+        }
+      } else {
+        // No due date, no specific day - assign to Waiting
+        category = waitingCategory;
       }
     } else if (task.dueDate != null) {
       // Task has due date but no day of week - categorize based on due date (matches Android logic)
@@ -144,9 +166,6 @@ export class TaskCategorizer {
         // Future due date beyond next week - assign to Waiting
         category = waitingCategory;
       }
-    } else if (task.dayOfWeek === null || task.dayOfWeek === 'Waiting') {
-      // No due date, no specific day - assign to Waiting
-      category = waitingCategory;
     } else {
       // Fallback - assign to Waiting
       category = waitingCategory;
@@ -156,19 +175,26 @@ export class TaskCategorizer {
     // Add task to appropriate category
     if (category === immediateOption) {
       immediateTasks.push(task);
+      console.log('DEBUG: Task added to immediateTasks:', task.description);
     } else if (category === soonOption) {
       soonTasks.push(task);
+      console.log('DEBUG: Task added to soonTasks:', task.description);
     } else if (category === waitingCategory) {
       waitingTasks.push(task);
+      console.log('DEBUG: Task added to waitingTasks:', task.description);
     } else if (category === completedCategory) {
       completedTasks.push(task);
+      console.log('DEBUG: Task added to completedTasks:', task.description);
     } else {
       // Find the day index for this category
       const dayIndex = daysOfWeek.indexOf(category);
+      console.log('DEBUG: Task category:', category, 'dayIndex:', dayIndex);
       if (dayIndex >= 3 && dayIndex <= 9) {
-        const dayTasksIndex = dayIndex - 3; // Convert to 0-6 range
+        const dayTasksIndex = dayIndexToTaskIndex[dayIndex]; // Use the mapping
+        console.log('DEBUG: dayTasksIndex:', dayTasksIndex, 'for task:', task.description);
         if (dayTasksIndex >= 0 && dayTasksIndex < dayTasks.length) {
           dayTasks[dayTasksIndex].push(task);
+          console.log('DEBUG: Task added to dayTasks[', dayTasksIndex, ']:', task.description);
         }
       } else {
         console.warn('Unknown day category:', category);
@@ -204,6 +230,15 @@ export class TaskCategorizer {
       }
       dayIndices.push(dayIndex);
     }
+    
+    // Create a mapping from dayOfWeek array index to dayTasks array index
+    const dayIndexToTaskIndex = {};
+    dayIndices.forEach((dayIndex, taskIndex) => {
+      dayIndexToTaskIndex[dayIndex] = taskIndex;
+    });
+    console.log('DEBUG: todayDayOfWeek:', todayDayOfWeek, 'todayIndex:', todayIndex);
+    console.log('DEBUG: dayIndices:', dayIndices);
+    console.log('DEBUG: dayIndices mapped to days:', dayIndices.map(i => this.daysOfWeek[i]));
     
 
     // Create category order
@@ -273,7 +308,7 @@ export class TaskCategorizer {
           this.processSingleTask(taskCopy, immediateTasks, soonTasks, waitingTasks, 
                                completedTasks, dayTasks, this.daysOfWeek, dayIndices, 
                                this.immediateOption, this.soonOption, this.waitingCategory, 
-                               this.completedCategory, this.noneOption, todayMillis, nextWeekMillis);
+                               this.completedCategory, this.noneOption, todayMillis, nextWeekMillis, dayIndexToTaskIndex);
           
         }
       } else {
@@ -281,7 +316,7 @@ export class TaskCategorizer {
         this.processSingleTask(task, immediateTasks, soonTasks, waitingTasks, 
                              completedTasks, dayTasks, this.daysOfWeek, dayIndices, 
                              this.immediateOption, this.soonOption, this.waitingCategory, 
-                             this.completedCategory, this.noneOption, todayMillis, nextWeekMillis);
+                             this.completedCategory, this.noneOption, todayMillis, nextWeekMillis, dayIndexToTaskIndex);
       }
     });
 
