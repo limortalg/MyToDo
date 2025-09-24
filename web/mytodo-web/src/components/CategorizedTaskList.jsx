@@ -41,6 +41,51 @@ const CategorizedTaskList = ({
 
   const categorizer = useMemo(() => new TaskCategorizer(t), [t]);
 
+  // Check if a task is immediate (matches Android logic)
+  const isTaskImmediate = (task) => {
+    // A task is immediate if:
+    // 1. It has dayOfWeek set to "Immediate" 
+    // 2. It has a due date that is overdue (past today)
+    
+    // Check if task is explicitly marked as immediate
+    if (task.dayOfWeek === 'Immediate') {
+      return true;
+    }
+    
+    // Check if task has overdue date
+    if (task.dueDate != null) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayMillis = today.getTime();
+      
+      if (task.dueDate < todayMillis) {
+        return true; // Task is overdue
+      }
+    }
+    
+    return false;
+  };
+
+  const getReminderText = (task) => {
+    if (!task.reminderOffset || task.reminderOffset < 0 || task.isCompleted) {
+      return null;
+    }
+    
+    // Map reminder offset to text (matching Android app logic)
+    switch (task.reminderOffset) {
+      case 0:
+        return t('At due time');
+      case 15:
+        return t('15 minutes before');
+      case 30:
+        return t('30 minutes before');
+      case 60:
+        return t('60 minutes before');
+      default:
+        return t('At due time');
+    }
+  };
+
   const filteredTasks = useMemo(() => {
     if (!tasks) return [];
     
@@ -312,7 +357,7 @@ const CategorizedTaskList = ({
                                 wordBreak: 'break-word'
                               }}
                             >
-                              {task.description}
+                              {isTaskImmediate(task) ? `⚡ ${task.description}` : task.description}
                             </Typography>
                             
                             {task.isRecurring && (
@@ -324,6 +369,12 @@ const CategorizedTaskList = ({
                             {formatDueDate(task.dueDate, task.dueTime) && (
                               <Typography variant="caption" color="text.secondary">
                                 {getDueLabel(task.dueDate, task.dueTime)}: {formatDueDate(task.dueDate, task.dueTime)}
+                              </Typography>
+                            )}
+
+                            {getReminderText(task) && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                🔔 {getReminderText(task)}
                               </Typography>
                             )}
                           </Box>

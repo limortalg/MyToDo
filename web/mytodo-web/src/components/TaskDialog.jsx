@@ -171,7 +171,6 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
 
   const handleClose = () => {
     setErrors({});
-    setShowDatePicker(false);
     onClose();
   };
 

@@ -21,14 +21,14 @@ export class TaskCategorizer {
 
   // Map day of week to current language (matches Android logic)
   mapDayOfWeekToCurrentLanguage(dayOfWeek, daysOfWeek) {
-    // Handle special categories first - web app stores English values like Android
-    if (dayOfWeek === 'Waiting') {
+    // Handle special categories first - support both English and Hebrew values
+    if (dayOfWeek === 'Waiting' || dayOfWeek === 'בהמתנה') {
       return this.t('Waiting');
     }
-    if (dayOfWeek === 'Immediate') {
+    if (dayOfWeek === 'Immediate' || dayOfWeek === 'מיידי') {
       return this.t('Immediate');
     }
-    if (dayOfWeek === 'Soon') {
+    if (dayOfWeek === 'Soon' || dayOfWeek === 'בקרוב') {
       return this.t('Soon');
     }
     
@@ -36,20 +36,17 @@ export class TaskCategorizer {
     const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
     
+    // Check if it's a Hebrew day name and map to English
+    const hebrewIndex = hebrewDays.indexOf(dayOfWeek);
+    if (hebrewIndex >= 0) {
+      return englishDays[hebrewIndex];
+    }
+    
     // Find the index of the stored day in English
     let englishIndex = -1;
     for (let i = 0; i < englishDays.length; i++) {
       if (englishDays[i] === dayOfWeek) {
         englishIndex = i;
-        break;
-      }
-    }
-    
-    // Find the index of the stored day in Hebrew
-    let hebrewIndex = -1;
-    for (let i = 0; i < hebrewDays.length; i++) {
-      if (hebrewDays[i] === dayOfWeek) {
-        hebrewIndex = i;
         break;
       }
     }
@@ -98,34 +95,40 @@ export class TaskCategorizer {
       console.warn('Completed task missing completion date, categorizing by day:', task.description);
       // Fall through to normal categorization
     } else if (task.dayOfWeek != null) {
-      // Always map dayOfWeek to current language first
-      const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
-      
-      if (mappedDayOfWeek === waitingCategory) {
-        // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
-        if (task.dueDate != null) {
-          if (task.dueDate < todayMillis) {
-            category = immediateOption;
-          } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
-            // Due date within next week - categorize by the day of the due date
-            const dueDate = new Date(task.dueDate);
-            const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
-            const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
-            category = daysOfWeek[dayIndex];
+      // Check if task has overdue date first (matches Android logic)
+      if (task.dueDate != null && task.dueDate < todayMillis) {
+        // Past due date, assign to Immediate (matches Android logic)
+        category = immediateOption;
+      } else {
+        // Always map dayOfWeek to current language first
+        const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
+        
+        if (mappedDayOfWeek === waitingCategory) {
+          // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
+          if (task.dueDate != null) {
+            if (task.dueDate < todayMillis) {
+              category = immediateOption;
+            } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
+              // Due date within next week - categorize by the day of the due date
+              const dueDate = new Date(task.dueDate);
+              const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
+              const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
+              category = daysOfWeek[dayIndex];
+            } else {
+              // Future due date beyond next week - assign to Waiting
+              category = waitingCategory;
+            }
           } else {
-            // Future due date beyond next week - assign to Waiting
             category = waitingCategory;
           }
+        } else if (mappedDayOfWeek === immediateOption) {
+          category = immediateOption;
+        } else if (mappedDayOfWeek === soonOption) {
+          category = soonOption;
         } else {
-          category = waitingCategory;
+          // Task has a specific day of the week
+          category = mappedDayOfWeek;
         }
-      } else if (mappedDayOfWeek === immediateOption) {
-        category = immediateOption;
-      } else if (mappedDayOfWeek === soonOption) {
-        category = soonOption;
-      } else {
-        // Task has a specific day of the week
-        category = mappedDayOfWeek;
       }
     } else if (task.dueDate != null) {
       // Task has due date but no day of week - categorize based on due date (matches Android logic)
@@ -190,6 +193,7 @@ export class TaskCategorizer {
     const todayDayOfWeek = today.getDay(); // 0=Sunday, ..., 6=Saturday
     const todayIndex = todayDayOfWeek + 3; // Map to daysOfWeek array indices (3-9)
     
+    
     // Create dayIndices array for the current week order
     const dayIndices = [];
     for (let i = 0; i < 7; i++) {
@@ -200,6 +204,7 @@ export class TaskCategorizer {
       }
       dayIndices.push(dayIndex);
     }
+    
 
     // Create category order
     const categoryOrder = [];
@@ -289,10 +294,10 @@ export class TaskCategorizer {
       dayTasks
     });
 
-    // Build final categorized tasks
+    // Build final categorized tasks (matches Android logic exactly)
     const categorizedTasks = [];
     
-    categoryOrder.forEach(category => {
+    categoryOrder.forEach((category, categoryIndex) => {
       let categoryTasks = [];
       
       if (category === this.soonOption) {
@@ -302,15 +307,16 @@ export class TaskCategorizer {
       } else if (category === this.completedCategory) {
         categoryTasks = sortedCategories.completedTasks;
       } else {
-        // Find the day index for this category
-        const dayIndex = this.daysOfWeek.indexOf(category);
-        if (dayIndex >= 3 && dayIndex <= 9) {
-          const dayTasksIndex = dayIndex - 3;
-          categoryTasks = sortedCategories.dayTasks[dayTasksIndex];
-          
-          // If this is the current day (first in the list), add immediate tasks
-          if (dayTasksIndex === 0) {
-            categoryTasks = [...categoryTasks, ...sortedCategories.immediateTasks];
+        // Find the day index for this category in the dayIndices array
+        for (let i = 0; i < dayIndices.length; i++) {
+          if (category === this.daysOfWeek[dayIndices[i]]) {
+            categoryTasks = [...sortedCategories.dayTasks[i]];
+            
+            // If this is the current day (first in the list), add immediate tasks (matches Android logic)
+            if (i === 0) {
+              categoryTasks = [...categoryTasks, ...sortedCategories.immediateTasks];
+            }
+            break;
           }
         }
       }

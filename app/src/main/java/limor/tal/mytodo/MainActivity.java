@@ -66,7 +66,6 @@ public class MainActivity extends AppCompatActivity {
     private EditText searchEditText;
     private CheckBox includeCompletedCheckBox;
     private TextView emptyStateTextView;
-    private TextView languageIcon;
     private RecyclerView recyclerView;
     private Button editButton;
     private Button moveButton;
@@ -161,7 +160,6 @@ public class MainActivity extends AppCompatActivity {
         recyclerView = findViewById(R.id.recyclerView);
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
         emptyStateTextView = findViewById(R.id.emptyStateTextView);
-        languageIcon = findViewById(R.id.languageIcon);
 
                 // Handle intent actions from ReminderService (after viewModel is initialized)
         Intent intent = getIntent();
@@ -281,11 +279,6 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MyToDo", "onCreate: App icon ImageView not found!");
         }
 
-        // Language toggle
-        languageIcon.setOnClickListener(v -> {
-            String newLanguage = language.equals("he") ? "en" : "he";
-            setLocale(newLanguage);
-        });
         
         // Settings button
         ImageButton settingsButton = findViewById(R.id.settingsButton);
@@ -293,6 +286,38 @@ public class MainActivity extends AppCompatActivity {
             settingsButton.setOnClickListener(v -> {
                 Intent settingsIntent = new Intent(this, SettingsActivity.class);
                 startActivity(settingsIntent);
+            });
+        }
+
+        // Sync button
+        ImageButton syncButton = findViewById(R.id.syncButton);
+        if (syncButton != null) {
+            syncButton.setOnClickListener(v -> {
+                if (authService.isUserSignedIn()) {
+                    syncManager.syncTasks(new SyncManager.SyncCallback() {
+                        @Override
+                        public void onSyncComplete(boolean success, String message) {
+                            runOnUiThread(() -> {
+                                if (success) {
+                                    Toast.makeText(MainActivity.this, "Sync completed successfully", Toast.LENGTH_SHORT).show();
+                                    viewModel.forceRefreshTasks(); // Refresh the task list
+                                } else {
+                                    Toast.makeText(MainActivity.this, "Sync failed: " + message, Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onSyncProgress(String message) {
+                            runOnUiThread(() -> {
+                                // Could show progress in a snackbar or status bar
+                                Log.d("MyToDo", "Sync progress: " + message);
+                            });
+                        }
+                    });
+                } else {
+                    Toast.makeText(this, "Please sign in to sync tasks", Toast.LENGTH_SHORT).show();
+                }
             });
         }
 
@@ -440,7 +465,6 @@ public class MainActivity extends AppCompatActivity {
             });
         }
 
-        languageIcon.setText(language.equals("he") ? "EN" : "HE");
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         adapter = new TaskAdapter(new ArrayList<>(), viewModel, this, task -> {
             selectedTask = task;
@@ -637,18 +661,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Note: Button click listeners are set up earlier in the onCreate method with proper flag management
 
-        languageIcon.setOnClickListener(v -> {
-            String currentLang = prefs.getString(PREF_LANGUAGE, defaultLang);
-            String newLang = currentLang.equals("he") ? "en" : "he";
-            prefs.edit().putString(PREF_LANGUAGE, newLang).commit();
-            setLocale(newLang);
-            LocaleListCompat appLocale = LocaleListCompat.forLanguageTags(newLang.equals("he") ? "he-IL" : "en-US");
-            AppCompatDelegate.setApplicationLocales(appLocale);
-            languageIcon.setText(newLang.equals("he") ? "EN" : "HE");
-            Log.d("MyToDo", "languageIcon: Language changed to: " + newLang);
-            finish();
-            startActivity(getIntent());
-        });
     }
 
 

@@ -34,12 +34,8 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
     // Account settings
     private TextView accountStatusTextView;
     private Button signInOutButton;
-    private Button resetLoginButton;
-    private Button manualSyncButton;
-    private Button downloadFromCloudButton;
-    private Button testFirebaseButton;
+    private Button languageToggleButton;
     private FirebaseAuthService authService;
-    private SyncManager syncManager;
     private SharedPreferences prefs;
     
     private final ActivityResultLauncher<Intent> soundPickerLauncher = registerForActivityResult(
@@ -77,10 +73,10 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         // Set language BEFORE calling super.onCreate (same as MainActivity)
-        SharedPreferences prefs = getSharedPreferences("MyToDoPrefs", MODE_PRIVATE);
+        SharedPreferences tempPrefs = getSharedPreferences("MyToDoPrefs", MODE_PRIVATE);
         String deviceLang = Locale.getDefault().getLanguage();
         String defaultLang = (deviceLang.startsWith("he") || deviceLang.startsWith("iw")) ? "he" : "en";
-        String language = prefs.getString("language", defaultLang);
+        String language = tempPrefs.getString("language", defaultLang);
         
         Log.d(TAG, "SettingsActivity: Device language: " + deviceLang);
         Log.d(TAG, "SettingsActivity: Default language: " + defaultLang);
@@ -92,9 +88,8 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
         
-        // Initialize Firebase Auth and Sync
+        // Initialize Firebase Auth
         authService = new FirebaseAuthService(this);
-        syncManager = new SyncManager(this);
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         
         // Initialize views
@@ -104,10 +99,7 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
         // Initialize account views
         accountStatusTextView = findViewById(R.id.accountStatusTextView);
         signInOutButton = findViewById(R.id.signInOutButton);
-        resetLoginButton = findViewById(R.id.resetLoginButton);
-        manualSyncButton = findViewById(R.id.manualSyncButton);
-        downloadFromCloudButton = findViewById(R.id.downloadFromCloudButton);
-        testFirebaseButton = findViewById(R.id.testFirebaseButton);
+        languageToggleButton = findViewById(R.id.languageToggleButton);
         testSoundButton = findViewById(R.id.testSoundButton);
         
         // Debug: Check what strings are being loaded
@@ -225,94 +217,27 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
             }
         });
         
-        resetLoginButton.setOnClickListener(v -> {
-            // Clear the skipped login preference
-            prefs.edit().remove("skipped_login").apply();
-            Toast.makeText(this, getString(R.string.reset_login_message), Toast.LENGTH_SHORT).show();
-        });
-
-        manualSyncButton.setOnClickListener(v -> {
-            if (authService.isUserSignedIn()) {
-                manualSyncButton.setEnabled(false);
-                manualSyncButton.setText("מסנכרן...");
-                
-                // Reset first sync flag to ensure we download cloud tasks
-                syncManager.resetFirstSyncFlag();
-                
-                syncManager.forceSync(new SyncManager.SyncCallback() {
-                    @Override
-                    public void onSyncComplete(boolean success, String message) {
-                        runOnUiThread(() -> {
-                            manualSyncButton.setEnabled(true);
-                            manualSyncButton.setText("סנכרן עכשיו");
-                            Toast.makeText(SettingsActivity.this, 
-                                success ? "סנכרון הושלם בהצלחה" : "סנכרון נכשל: " + message, 
-                                Toast.LENGTH_SHORT).show();
-                        });
-                    }
-
-                    @Override
-                    public void onSyncProgress(String message) {
-                        Log.d(TAG, "Manual sync progress: " + message);
-                    }
-                });
-            } else {
-                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
-            }
-        });
-
-        downloadFromCloudButton.setOnClickListener(v -> {
-            if (authService.isUserSignedIn()) {
-                // Show confirmation dialog
-                new AlertDialog.Builder(this)
-                    .setTitle("מחיקת נתונים מקומיים")
-                    .setMessage("פעולה זו תמחק את כל המשימות המקומיות ותוריד את הנתונים מהענן. האם להמשיך?")
-                    .setPositiveButton("כן", (dialog, which) -> {
-                        downloadFromCloudButton.setEnabled(false);
-                        downloadFromCloudButton.setText("מוריד מהענן...");
-                        
-                        syncManager.forceDownloadFromCloud(new SyncManager.SyncCallback() {
-                            @Override
-                            public void onSyncComplete(boolean success, String message) {
-                                runOnUiThread(() -> {
-                                    downloadFromCloudButton.setEnabled(true);
-                                    downloadFromCloudButton.setText("הורד מהענן (מחק מקומי)");
-                                    Toast.makeText(SettingsActivity.this, 
-                                        success ? "הורדה מהענן הושלמה בהצלחה" : "הורדה מהענן נכשלה: " + message, 
-                                        Toast.LENGTH_SHORT).show();
-                                });
-                            }
-
-                            @Override
-                            public void onSyncProgress(String message) {
-                                Log.d(TAG, "Download from cloud progress: " + message);
-                            }
-                        });
-                    })
-                    .setNegativeButton("ביטול", null)
-                    .show();
-            } else {
-                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
-            }
+        // Language toggle button
+        languageToggleButton.setOnClickListener(v -> {
+            String currentLang = prefs.getString("language", "en");
+            String newLang = currentLang.equals("he") ? "en" : "he";
+            prefs.edit().putString("language", newLang).apply();
+            
+            // Restart activity to apply language change
+            Intent intent = new Intent(this, SettingsActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            finish();
+            startActivity(intent);
         });
         
-        testFirebaseButton.setOnClickListener(v -> {
-            if (authService.isUserSignedIn()) {
-                Toast.makeText(this, "בודק חיבור Firebase... בדוק את הלוגים", Toast.LENGTH_LONG).show();
-                syncManager.testFirebaseConnection();
-            } else {
-                Toast.makeText(this, "יש להתחבר תחילה", Toast.LENGTH_SHORT).show();
-            }
-        });
+        // Update language button text
+        String currentLang = prefs.getString("language", "en");
+        updateLanguageButtonText(currentLang);
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        // Shutdown sync manager to prevent memory leaks
-        if (syncManager != null) {
-            syncManager.shutdown();
-            Log.d(TAG, "onDestroy: SyncManager shutdown");
+    private void updateLanguageButtonText(String language) {
+        if (languageToggleButton != null) {
+            languageToggleButton.setText(language.equals("he") ? "Switch to English" : "עבור לעברית");
         }
     }
     

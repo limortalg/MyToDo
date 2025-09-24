@@ -5,12 +5,25 @@ import android.util.Log;
 
 import androidx.room.Room;
 
+import com.google.firebase.FirebaseApp;
+import com.google.firebase.auth.FirebaseAuth;
+
 public class TaskApplication extends Application {
     public static AppDatabase database;
 
     @Override
     public void onCreate() {
         super.onCreate();
+        
+        // Initialize Firebase
+        try {
+            FirebaseApp.initializeApp(this);
+            Log.d("MyToDo", "TaskApplication: Firebase initialized successfully");
+        } catch (Exception e) {
+            Log.e("MyToDo", "TaskApplication: Error initializing Firebase", e);
+        }
+        
+        // Initialize Room database
         try {
             database = Room.databaseBuilder(getApplicationContext(), AppDatabase.class, "task_database")
                     .fallbackToDestructiveMigration()

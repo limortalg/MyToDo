@@ -32,7 +32,7 @@
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="חשבון"
+            android:text="@string/account_settings"
             android:textSize="18sp"
             android:textStyle="bold"
             android:textColor="@android:color/white"
@@ -60,49 +60,11 @@
             android:id="@+id/signInOutButton"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="התחבר עם Google"
+            android:text="@string/sign_in_with_google"
             android:background="@drawable/rounded_button"
             android:textColor="@android:color/white"
             android:layout_marginBottom="8dp" />
 
-        <Button
-            android:id="@+id/resetLoginButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/reset_login"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white"
-            android:alpha="0.7"
-            android:layout_marginBottom="8dp" />
-
-        <Button
-            android:id="@+id/manualSyncButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="סנכרן עכשיו"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white"
-            android:alpha="0.8" />
-
-        <Button
-            android:id="@+id/downloadFromCloudButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="הורד מהענן (מחק מקומי)"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white"
-            android:alpha="0.8"
-            android:layout_marginTop="8dp" />
-
-        <Button
-            android:id="@+id/testFirebaseButton"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="בדוק חיבור Firebase"
-            android:background="@drawable/rounded_button"
-            android:textColor="@android:color/white"
-            android:alpha="0.7"
-            android:layout_marginTop="8dp" />
 
     </LinearLayout>
 
@@ -163,32 +125,6 @@
 
     </LinearLayout>
 
-    <!-- Vibration Settings Section -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:background="@drawable/rounded_button"
-        android:padding="16dp"
-        android:layout_marginBottom="16dp">
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/vibration"
-            android:textSize="18sp"
-            android:textStyle="bold"
-            android:textColor="@android:color/white"
-            android:layout_marginBottom="16dp" />
-
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="@string/vibration_info"
-            android:textSize="14sp"
-            android:textColor="@android:color/white" />
-
-    </LinearLayout>
 
     <!-- Reminder Behavior Section -->
     <LinearLayout
@@ -217,6 +153,16 @@
             android:lineSpacingExtra="4dp" />
 
     </LinearLayout>
+
+    <!-- Language Switch -->
+    <Button
+        android:id="@+id/languageToggleButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="English / עברית"
+        android:background="@drawable/rounded_button"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp" />
 
     <!-- Back Button -->
     <Button

@@ -7,11 +7,14 @@ import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
 import com.google.android.gms.tasks.Task;
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.GetTokenResult;
 import com.google.firebase.firestore.DocumentReference;
 import com.google.firebase.firestore.DocumentSnapshot;
 import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.FirebaseFirestoreSettings;
 import com.google.firebase.firestore.Query;
 import com.google.firebase.firestore.QuerySnapshot;
+import com.google.firebase.firestore.Source;
 import com.google.firebase.firestore.WriteBatch;
 
 import java.util.ArrayList;
@@ -37,6 +40,13 @@ public class FirestoreService {
     public FirestoreService() {
         this.db = FirebaseFirestore.getInstance();
         this.auth = FirebaseAuth.getInstance();
+        
+        // Disable offline persistence to ensure we always get fresh data from server
+        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                .setPersistenceEnabled(false)
+                .build();
+        this.db.setFirestoreSettings(settings);
+        Log.d(TAG, "Firestore offline persistence disabled - will always fetch fresh data from server");
     }
 
     // Save a single task to Firestore
@@ -151,7 +161,23 @@ public class FirestoreService {
             return;
         }
 
-        String userId = auth.getCurrentUser().getUid();
+        // Check if the user token is valid
+        auth.getCurrentUser().getIdToken(false).addOnCompleteListener(new OnCompleteListener<GetTokenResult>() {
+            @Override
+            public void onComplete(Task<GetTokenResult> tokenTask) {
+                if (tokenTask.isSuccessful()) {
+                    String userId = auth.getCurrentUser().getUid();
+                    Log.d(TAG, "Loading tasks from Firestore (offline persistence disabled - fresh data only) for user: " + userId);
+                    loadTasksFromFirestore(userId, callback);
+                } else {
+                    Log.e(TAG, "User authentication token invalid", tokenTask.getException());
+                    callback.onError("Authentication token invalid: " + tokenTask.getException().getMessage());
+                }
+            }
+        });
+    }
+    
+    private void loadTasksFromFirestore(String userId, TasksCallback callback) {
         
         db.collection(COLLECTION_TASKS)
                 .whereEqualTo("userId", userId)
@@ -174,10 +200,10 @@ public class FirestoreService {
                                     Log.e(TAG, "Error parsing task document", e);
                                 }
                             }
-                            Log.d(TAG, "Loaded " + tasks.size() + " tasks from Firestore");
+                            Log.d(TAG, "Loaded " + tasks.size() + " tasks from Firestore (fresh data from server)");
                             callback.onTasksLoaded(tasks);
                         } else {
-                            Log.e(TAG, "Error loading tasks", task.getException());
+                            Log.e(TAG, "Error loading tasks from Firestore", task.getException());
                             callback.onError("Failed to load tasks: " + task.getException().getMessage());
                         }
                     }

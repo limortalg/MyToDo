@@ -80,6 +80,19 @@
                 android:tint="@android:color/white"
                 android:contentDescription="@string/search_tasks" />
 
+            <!-- Sync Button -->
+            <ImageButton
+                android:id="@+id/syncButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_popup_sync"
+                android:background="@drawable/rounded_button"
+                android:scaleType="fitCenter"
+                android:padding="12dp"
+                android:layout_marginEnd="8dp"
+                android:tint="@android:color/white"
+                android:contentDescription="@string/sync_now" />
+
             <!-- Settings Button -->
             <ImageButton
                 android:id="@+id/settingsButton"
@@ -93,18 +106,6 @@
                 android:tint="@android:color/white"
                 android:contentDescription="Settings" />
 
-            <!-- Language Toggle -->
-            <TextView
-                android:id="@+id/languageIcon"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
-                android:text="EN"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="@android:color/white"
-                android:background="@drawable/rounded_button"
-                android:padding="8dp"
-                android:gravity="center" />
 
         </LinearLayout>
 

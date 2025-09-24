@@ -70,6 +70,7 @@
     <string name="settings">הגדרות</string>
     <string name="account_settings">חשבון</string>
     <string name="sign_in_to_sync">התחבר כדי לסנכרן משימות בין מכשירים</string>
+    <string name="sync_now">סנכרן עכשיו</string>
     <string name="sign_in_with_google">התחבר עם Google</string>
     <string name="sign_out">התנתק</string>
     <string name="signed_in_as">מחובר בתור: %1$s</string>
@@ -79,6 +80,15 @@
     <string name="welcome_user">ברוך הבא, %1$s!</string>
     <string name="sign_in_error">התחברות נכשלה: %1$s</string>
     <string name="sign_in_start_error">שגיאה בהתחלת ההתחברות. נסה שוב.</string>
+    <string name="playing_test_sound">מנגן צליל בדיקה...</string>
+    <string name="error_playing_sound">שגיאה בהשמעת צליל</string>
     <string name="reset_login">איפוס התחברות</string>
     <string name="reset_login_message">זה יציג את מסך ההתחברות שוב בהפעלה הבאה</string>
+    <string name="vibration">רטט</string>
+    <string name="vibration_info">רטט מופעל כברירת מחדל עבור כל התזכורות</string>
+    <string name="language">שפה</string>
+    <string name="language_changed">השפה שונתה</string>
+    <string name="reminder_behavior">התנהגות תזכורות</string>
+    <string name="reminder_behavior_info">• לא ניתן לבטל תזכורות על ידי החלקה\n• צליל ורטט ממשיכים עד שתנקוט פעולה\n• השתמש בכפתורי דחה, השלם, ערוך או מחק כדי לעצור\n• רטט מופעל כברירת מחדל עבור כל התזכורות</string>
+    <string name="back">חזור</string>
 </resources>

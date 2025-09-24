@@ -57,6 +57,7 @@ const translations = {
     'At due time': 'בשעת היעד',
     '15 minutes before': '15 דקות לפני',
     '30 minutes before': '30 דקות לפני',
+    '60 minutes before': '60 דקות לפני',
     '1 hour before': 'שעה לפני',
     
     // Task List
@@ -144,6 +145,7 @@ const translations = {
     'At due time': 'At due time',
     '15 minutes before': '15 minutes before',
     '30 minutes before': '30 minutes before',
+    '60 minutes before': '60 minutes before',
     '1 hour before': '1 hour before',
     
     // Task List

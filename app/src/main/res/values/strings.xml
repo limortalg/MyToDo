@@ -56,6 +56,7 @@
     <string name="settings">Settings</string>
     <string name="account_settings">Account</string>
     <string name="sign_in_to_sync">Sign in to sync tasks across devices</string>
+    <string name="sync_now">Sync Now</string>
     <string name="sign_in_with_google">Sign in with Google</string>
     <string name="sign_out">Sign Out</string>
     <string name="signed_in_as">Signed in as: %1$s</string>
@@ -68,7 +69,7 @@
     <string name="reset_login">Reset Login</string>
     <string name="reset_login_message">This will show the login screen again on next app launch</string>
     <string name="vibration_info">Vibration is enabled by default for all reminders</string>
-    <string name="reminder_behavior_info">• Reminders cannot be dismissed by swiping\n• Sound and vibration continue until you take action\n• Use Snooze, Complete, Edit, or Delete buttons to stop</string>
+    <string name="reminder_behavior_info">• Reminders cannot be dismissed by swiping\n• Sound and vibration continue until you take action\n• Use Snooze, Complete, Edit, or Delete buttons to stop\n• Vibration is enabled by default for all reminders</string>
     
     <!-- Localized day names and options -->
     <string name="option_none">None</string>
@@ -132,6 +133,8 @@
     <string name="select_sound">Select Sound</string>
     <string name="test_sound">Test Sound</string>
     <string name="vibration">Vibration</string>
+    <string name="language">Language</string>
+    <string name="language_changed">Language changed</string>
     <string name="reminder_behavior">Reminder Behavior</string>
     <string name="back">Back</string>
 </resources>

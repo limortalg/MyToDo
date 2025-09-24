@@ -253,6 +253,12 @@ public class SyncManager {
                 }
             }
             
+            Log.d(TAG, "=== CLOUD TASKS DEBUG ===");
+            Log.d(TAG, "Cloud tasks by FirestoreID:");
+            for (Map.Entry<String, limor.tal.mytodo.Task> entry : cloudMap.entrySet()) {
+                Log.d(TAG, "  " + entry.getKey() + " -> " + entry.getValue().description);
+            }
+            
             Log.d(TAG, "Local map size: " + localMap.size());
             Log.d(TAG, "Cloud map size: " + cloudMap.size());
             
@@ -320,8 +326,26 @@ public class SyncManager {
                 }
             }
             
+            // Find tasks to delete (local tasks that are no longer in cloud)
+            List<limor.tal.mytodo.Task> tasksToDelete = new ArrayList<>();
+            Log.d(TAG, "=== DELETION DETECTION DEBUG ===");
+            Log.d(TAG, "Checking " + localChanges.size() + " local tasks for deletion");
+            Log.d(TAG, "Cloud tasks available: " + cloudMap.keySet());
+            for (limor.tal.mytodo.Task localTask : localChanges) {
+                Log.d(TAG, "Checking local task: " + localTask.description + " (FirestoreID: " + localTask.firestoreDocumentId + ")");
+                if (localTask.firestoreDocumentId != null && !cloudMap.containsKey(localTask.firestoreDocumentId)) {
+                    Log.d(TAG, "*** TASK TO DELETE *** (no longer in cloud): " + localTask.description + " (FirestoreID: " + localTask.firestoreDocumentId + ")");
+                    tasksToDelete.add(localTask);
+                } else if (localTask.firestoreDocumentId != null) {
+                    Log.d(TAG, "Task still exists in cloud: " + localTask.description + " (FirestoreID: " + localTask.firestoreDocumentId + ")");
+                } else {
+                    Log.d(TAG, "Local task has no FirestoreID: " + localTask.description);
+                }
+            }
+            Log.d(TAG, "Found " + tasksToDelete.size() + " tasks to delete");
+            
             // Update local database with cloud changes (run on background thread)
-            executorService.execute(() -> updateLocalDatabase(tasksToUpdate, tasksToInsert, callback));
+            executorService.execute(() -> updateLocalDatabase(tasksToUpdate, tasksToInsert, tasksToDelete, callback));
             
         } catch (Exception e) {
             Log.e(TAG, "Merge error", e);
@@ -330,11 +354,12 @@ public class SyncManager {
     }
 
     // Update local database with merged tasks
-    private void updateLocalDatabase(List<limor.tal.mytodo.Task> tasksToUpdate, List<limor.tal.mytodo.Task> tasksToInsert, SyncCallback callback) {
+    private void updateLocalDatabase(List<limor.tal.mytodo.Task> tasksToUpdate, List<limor.tal.mytodo.Task> tasksToInsert, List<limor.tal.mytodo.Task> tasksToDelete, SyncCallback callback) {
         try {
             Log.d(TAG, "=== DATABASE UPDATE DEBUG ===");
             Log.d(TAG, "Tasks to update: " + tasksToUpdate.size());
             Log.d(TAG, "Tasks to insert: " + tasksToInsert.size());
+            Log.d(TAG, "Tasks to delete: " + tasksToDelete.size());
             
             
             // Update existing tasks - find local task by firestoreDocumentId and update it
@@ -385,6 +410,13 @@ public class SyncManager {
                 Log.d(TAG, "Inserted task with local ID: " + task.id);
             }
             
+            // Delete tasks that are no longer in cloud
+            for (limor.tal.mytodo.Task task : tasksToDelete) {
+                Log.d(TAG, "Deleting task: " + task.description + " (Local ID: " + task.id + ", FirestoreID: " + task.firestoreDocumentId + ")");
+                taskDao.delete(task);
+                Log.d(TAG, "Deleted task: " + task.description);
+            }
+            
             // Update last sync timestamp
             prefs.edit()
                     .putLong(PREF_LAST_SYNC, System.currentTimeMillis())
@@ -399,8 +431,8 @@ public class SyncManager {
                       ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted + ")");
             }
             
-            Log.d(TAG, "Local database updated: " + tasksToUpdate.size() + " updated, " + tasksToInsert.size() + " inserted");
-            callback.onSyncComplete(true, "Sync completed - " + (tasksToUpdate.size() + tasksToInsert.size()) + " tasks synchronized");
+            Log.d(TAG, "Local database updated: " + tasksToUpdate.size() + " updated, " + tasksToInsert.size() + " inserted, " + tasksToDelete.size() + " deleted");
+            callback.onSyncComplete(true, "Sync completed - " + (tasksToUpdate.size() + tasksToInsert.size()) + " tasks synchronized, " + tasksToDelete.size() + " deleted");
             
         } catch (Exception e) {
             Log.e(TAG, "Database update error", e);
