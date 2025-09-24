@@ -307,7 +307,6 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                   {formData.dueDate && (
                     <IconButton 
                       onClick={() => {
-                        console.log('Clear button clicked!');
                         handleDateChange('dueDate')(null);
                         setDateText('');
                       }}

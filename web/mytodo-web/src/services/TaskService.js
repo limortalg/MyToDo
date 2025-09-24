@@ -66,11 +66,8 @@ export class TaskService {
   // Delete a task
   async deleteTask(taskId) {
     try {
-      console.log('TaskService: Deleting task with ID:', taskId);
       const taskRef = doc(this.db, this.collectionName, taskId);
-      console.log('TaskService: Task reference created:', taskRef.path);
       await deleteDoc(taskRef);
-      console.log('TaskService: Task deleted successfully from Firestore');
     } catch (error) {
       console.error('Error deleting task:', error);
       throw error;

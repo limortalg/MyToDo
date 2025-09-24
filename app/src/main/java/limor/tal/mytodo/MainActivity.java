@@ -94,17 +94,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        Log.d("MyToDo", "=== onCreate ENTRY ===");
-        Log.d("MyToDo", "onCreate: Intent: " + (getIntent() != null ? getIntent().toString() : "null"));
-        Log.d("MyToDo", "onCreate: Intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
-        Log.d("MyToDo", "onCreate: Intent extras: " + (getIntent() != null && getIntent().getExtras() != null ? getIntent().getExtras().toString() : "null"));
         
         prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
         String deviceLang = Locale.getDefault().getLanguage();
         String defaultLang = (deviceLang.startsWith("he") || deviceLang.startsWith("iw")) ? "he" : "en";
         String language = prefs.getString(PREF_LANGUAGE, defaultLang);
-        Log.d("MyToDo", "onCreate: Device default language: " + deviceLang);
-        Log.d("MyToDo", "onCreate: Selected language: " + language);
         setLocale(language);
 
         super.onCreate(savedInstanceState);
@@ -163,8 +157,6 @@ public class MainActivity extends AppCompatActivity {
 
                 // Handle intent actions from ReminderService (after viewModel is initialized)
         Intent intent = getIntent();
-        Log.d("MyToDo", "=== onCreate ENTRY ===");
-        Log.d("MyToDo", "onCreate: Intent check - action: " + (intent != null ? intent.getAction() : "null") + ", flag: " + isProcessingEditFromReminder);
         // Log.d("MyToDo", "onCreate: Stack trace for onCreate call:");
         // Thread.dumpStack();
         
@@ -792,8 +784,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void showTaskDialog(Task task) {
-        Log.d("MyToDo", "=== showTaskDialog ENTRY ===");
-        Log.d("MyToDo", "showTaskDialog: Called with task: " + (task != null ? task.description + ", id: " + task.id : "new task"));
         Log.d("MyToDo", "showTaskDialog: Current intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
         Log.d("MyToDo", "showTaskDialog: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
         // Log.d("MyToDo", "showTaskDialog: Stack trace for dialog opening:");
@@ -1128,8 +1118,6 @@ public class MainActivity extends AppCompatActivity {
         final AlertDialog dialog = builder.create();
 
         saveButton.setOnClickListener(v -> {
-            Log.d("MyToDo", "=== SAVE BUTTON CLICKED ===");
-            Log.d("MyToDo", "saveButton: Task being saved: " + (task != null ? task.description + ", id: " + task.id : "new task"));
             Log.d("MyToDo", "saveButton: Current intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
             Log.d("MyToDo", "saveButton: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
             // Log.d("MyToDo", "saveButton: Stack trace for save button click:");
@@ -1276,8 +1264,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
         cancelButton.setOnClickListener(v -> {
-            Log.d("MyToDo", "=== CANCEL BUTTON CLICKED ===");
-            Log.d("MyToDo", "cancelButton: Task being cancelled: " + (task != null ? task.description + ", id: " + task.id : "new task"));
             Log.d("MyToDo", "cancelButton: Current intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
             Log.d("MyToDo", "cancelButton: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
             // Log.d("MyToDo", "cancelButton: Stack trace for cancel button click:");
@@ -2188,8 +2174,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onResume() {
         super.onResume();
-        Log.d("MyToDo", "=== onResume ENTRY ===");
-        Log.d("MyToDo", "onResume: Called");
         Log.d("MyToDo", "onResume: Current intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
         Log.d("MyToDo", "onResume: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
         
@@ -2236,8 +2220,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Log.d("MyToDo", "=== onNewIntent ENTRY ===");
-        Log.d("MyToDo", "onNewIntent: Called with action: " + (intent != null ? intent.getAction() : "null"));
         Log.d("MyToDo", "onNewIntent: Current activity intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
         Log.d("MyToDo", "onNewIntent: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
         
@@ -2261,8 +2243,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("MyToDo", "=== onStart ENTRY ===");
-        Log.d("MyToDo", "onStart: Called");
         Log.d("MyToDo", "onStart: Current intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
         Log.d("MyToDo", "onStart: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
         // Log.d("MyToDo", "onStart: Stack trace for onStart call:");

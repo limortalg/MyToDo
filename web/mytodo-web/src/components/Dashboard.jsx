@@ -104,24 +104,16 @@ const Dashboard = ({ taskService, user }) => {
     const task = tasks.find(t => t.id === taskId);
     const taskDescription = task ? task.description : 'this task';
     
-    console.log('Dashboard: Attempting to delete task:', taskDescription, 'with ID:', taskId);
-    console.log('Dashboard: Task details:', task);
-    
     // Show confirmation dialog
     if (window.confirm(`${t('Are you sure you want to delete this task?')} ${t('This action cannot be undone.')}`)) {
       try {
-        console.log('Dashboard: User confirmed deletion, calling taskService.deleteTask');
         await taskService.deleteTask(taskId);
-        console.log('Dashboard: Task deleted successfully, showing success message');
         showSnackbar('Task deleted successfully', 'success');
-        console.log('Dashboard: Reloading tasks after deletion');
         loadTasks();
       } catch (error) {
         console.error('Dashboard: Error deleting task:', error);
         showSnackbar('Failed to delete task', 'error');
       }
-    } else {
-      console.log('Dashboard: User cancelled deletion');
     }
   };
 
