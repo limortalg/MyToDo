@@ -158,7 +158,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       description: formData.description.trim(),
       dueDate: formData.dueDate ? formData.dueDate.getTime() : null,
       dueTime: formData.dueTime ? calculateMillisecondsSinceMidnight(formData.dueTime) : null,
-      dayOfWeek: formData.whenToPerform,
+      dayOfWeek: formData.whenToPerform === 'Waiting' ? null : formData.whenToPerform,
       isRecurring: formData.isRecurring,
       recurrenceType: formData.isRecurring ? formData.recurrenceType : null,
       priority: parseInt(formData.priority),
@@ -286,7 +286,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value) {
-                          handleDateChange('dueDate')(new Date(value));
+                          // Create date in UTC to avoid timezone issues
+                          const date = new Date(value + 'T00:00:00.000Z');
+                          handleDateChange('dueDate')(date);
                         } else {
                           handleDateChange('dueDate')(null);
                         }

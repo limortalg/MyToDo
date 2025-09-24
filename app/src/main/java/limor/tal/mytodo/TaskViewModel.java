@@ -645,8 +645,6 @@ public class TaskViewModel extends AndroidViewModel {
         }
 
         // Add task to appropriate category(ies)
-        Log.d("MyToDo", "Adding task to category: " + category + " (immediateOption: " + immediateOption + 
-                ", soonOption: " + soonOption + ", waitingCategory: " + waitingCategory + ", completedCategory: " + completedCategory + ")");
         
         if (category.equals(immediateOption)) {
             immediateTasks.add(task);
@@ -716,9 +714,6 @@ public class TaskViewModel extends AndroidViewModel {
         }
         if ("Soon".equals(storedDayOfWeek) || "בקרוב".equals(storedDayOfWeek)) {
             return currentDaysOfWeek[2]; // "Soon" or "בקרוב"
-        }
-        if ("Waiting".equals(storedDayOfWeek) || "בהמתנה".equals(storedDayOfWeek)) {
-            return getApplication().getString(R.string.category_waiting);
         }
         
         String[] englishDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};

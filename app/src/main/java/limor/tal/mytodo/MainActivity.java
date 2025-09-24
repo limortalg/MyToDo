@@ -464,7 +464,6 @@ public class MainActivity extends AppCompatActivity {
         });
         recyclerView.setAdapter(adapter);
         
-        Log.d("MyToDo", "onCreate: TaskAdapter created with reorder functionality");
 
         // Request notification permission on Android 13+
         if (android.os.Build.VERSION.SDK_INT >= 33) {
