@@ -21,6 +21,8 @@ public class Task {
     public String reminderDays; // For daily recurring tasks: null (all days), or comma-separated day indices (0=Sunday, 1=Monday, etc.)
     public Integer manualPosition; // null = automatic ordering, integer = manual position from drag operations
     public String firestoreDocumentId; // Firestore document ID for cloud sync
+    public Long createdAt; // Timestamp when task was created
+    public Long updatedAt; // Timestamp when task was last updated
 
     public Task(String description, Long dueDate, String dayOfWeek, boolean isRecurring, String recurrenceType, boolean isCompleted, int priority) {
         this.description = description;
@@ -35,6 +37,8 @@ public class Task {
         this.reminderOffset = null; // No reminder by default
         this.reminderDays = null; // All days by default
         this.manualPosition = null; // Automatic ordering by default
+        this.createdAt = System.currentTimeMillis();
+        this.updatedAt = System.currentTimeMillis();
     }
 
     @Override

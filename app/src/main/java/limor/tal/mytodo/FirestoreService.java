@@ -58,7 +58,7 @@ public class FirestoreService {
 
         String userId = auth.getCurrentUser().getUid();
         FirestoreTask firestoreTask = FirestoreTask.fromTask(task, userId);
-        firestoreTask.updateTimestamp();
+        // Don't call updateTimestamp() here - preserve the task's original updatedAt
 
         if (task.firestoreDocumentId != null) {
             // Update existing task
@@ -112,7 +112,7 @@ public class FirestoreService {
         String userId = auth.getCurrentUser().getUid();
         FirestoreTask firestoreTask = FirestoreTask.fromTask(task, userId);
         firestoreTask.documentId = documentId;
-        firestoreTask.updateTimestamp();
+        // Don't call updateTimestamp() here - preserve the task's original updatedAt
 
         db.collection(COLLECTION_TASKS)
                 .document(documentId)
@@ -222,7 +222,7 @@ public class FirestoreService {
 
         for (limor.tal.mytodo.Task task : tasks) {
             FirestoreTask firestoreTask = FirestoreTask.fromTask(task, userId);
-            firestoreTask.updateTimestamp();
+            // Don't call updateTimestamp() here - preserve the task's original updatedAt
             
             DocumentReference docRef = db.collection(COLLECTION_TASKS).document();
             batch.set(docRef, firestoreTask.toMap());

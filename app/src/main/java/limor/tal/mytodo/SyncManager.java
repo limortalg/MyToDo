@@ -192,11 +192,13 @@ public class SyncManager {
             List<limor.tal.mytodo.Task> localChanges = taskDao.getAllTasksSync();
             Log.d(TAG, "Incremental sync: Found " + localChanges.size() + " local tasks");
             
+            
             // Download cloud tasks
             firestoreService.loadUserTasks(new FirestoreService.TasksCallback() {
                 @Override
                 public void onTasksLoaded(List<limor.tal.mytodo.Task> cloudTasks) {
                     Log.d(TAG, "Incremental sync: Downloaded " + cloudTasks.size() + " cloud tasks");
+                    
                     
                     // Merge local and cloud changes
                     mergeTasks(localChanges, cloudTasks, callback);
@@ -302,6 +304,33 @@ public class SyncManager {
                 }
             }
             
+            // Upload local changes for existing tasks that have been modified
+            for (limor.tal.mytodo.Task localTask : localChanges) {
+                if (localTask.firestoreDocumentId != null && cloudMap.containsKey(localTask.firestoreDocumentId)) {
+                    // This is an existing task, check if local version is newer
+                    limor.tal.mytodo.Task cloudTask = cloudMap.get(localTask.firestoreDocumentId);
+                    long localUpdatedAt = localTask.updatedAt != null ? localTask.updatedAt : 0;
+                    long cloudUpdatedAt = cloudTask.updatedAt != null ? cloudTask.updatedAt : 0;
+                    
+                    if (localUpdatedAt > cloudUpdatedAt) {
+                        Log.d(TAG, "Uploading modified local task: " + localTask.description + 
+                              " (local updatedAt: " + localUpdatedAt + ", cloud updatedAt: " + cloudUpdatedAt + ")");
+                        
+                        firestoreService.saveTask(localTask, new FirestoreService.FirestoreCallback() {
+                            @Override
+                            public void onSuccess(Object result) {
+                                Log.d(TAG, "Uploaded modified local task: " + localTask.description);
+                            }
+
+                            @Override
+                            public void onError(String error) {
+                                Log.e(TAG, "Failed to upload modified local task: " + error);
+                            }
+                        });
+                    }
+                }
+            }
+            
             // Find tasks to delete (local tasks that are no longer in cloud)
             List<limor.tal.mytodo.Task> tasksToDelete = new ArrayList<>();
             for (limor.tal.mytodo.Task localTask : localChanges) {
@@ -340,27 +369,36 @@ public class SyncManager {
                 }
                 
                 if (localTaskToUpdate != null) {
-                    // Update the local task with cloud data (preserve local ID and local-only fields)
-                    localTaskToUpdate.description = cloudTask.description;
-                    localTaskToUpdate.dueDate = cloudTask.dueDate;
-                    localTaskToUpdate.dueTime = cloudTask.dueTime;
-                    localTaskToUpdate.dayOfWeek = cloudTask.dayOfWeek;
-                    localTaskToUpdate.isRecurring = cloudTask.isRecurring;
-                    localTaskToUpdate.recurrenceType = cloudTask.recurrenceType;
-                    localTaskToUpdate.isCompleted = cloudTask.isCompleted;
-                    localTaskToUpdate.priority = cloudTask.priority;
-                    localTaskToUpdate.completionDate = cloudTask.completionDate;
-                    // Preserve local reminder settings if they exist (Android-specific feature)
-                    if (localTaskToUpdate.reminderOffset != null) {
-                        Log.d(TAG, "Preserving local reminder settings for task: " + localTaskToUpdate.description + 
-                              " (reminderOffset: " + localTaskToUpdate.reminderOffset + ", reminderDays: " + localTaskToUpdate.reminderDays + ")");
-                        // Keep local reminder settings, don't overwrite with cloud data
-                    } else {
-                        // Only use cloud reminder settings if local task has no reminders
+                    // Smart merge: use the newer version for each field based on updatedAt timestamp
+                    long localUpdatedAt = localTaskToUpdate.updatedAt != null ? localTaskToUpdate.updatedAt : 0;
+                    long cloudUpdatedAt = cloudTask.updatedAt != null ? cloudTask.updatedAt : 0;
+                    
+                    Log.d(TAG, "Merging task: " + localTaskToUpdate.description + 
+                          " (local updatedAt: " + localUpdatedAt + ", cloud updatedAt: " + cloudUpdatedAt + ")");
+                    
+                    // Use cloud data if it's newer, otherwise keep local data
+                    if (cloudUpdatedAt > localUpdatedAt) {
+                        Log.d(TAG, "Using cloud data (newer) for task: " + localTaskToUpdate.description);
+                        localTaskToUpdate.description = cloudTask.description;
+                        localTaskToUpdate.dueDate = cloudTask.dueDate;
+                        localTaskToUpdate.dueTime = cloudTask.dueTime;
+                        localTaskToUpdate.dayOfWeek = cloudTask.dayOfWeek;
+                        localTaskToUpdate.isRecurring = cloudTask.isRecurring;
+                        localTaskToUpdate.recurrenceType = cloudTask.recurrenceType;
+                        localTaskToUpdate.isCompleted = cloudTask.isCompleted;
+                        localTaskToUpdate.priority = cloudTask.priority;
+                        localTaskToUpdate.completionDate = cloudTask.completionDate;
                         localTaskToUpdate.reminderOffset = cloudTask.reminderOffset;
                         localTaskToUpdate.reminderDays = cloudTask.reminderDays;
+                        localTaskToUpdate.manualPosition = cloudTask.manualPosition;
+                        localTaskToUpdate.updatedAt = cloudTask.updatedAt;
+                    } else {
+                        Log.d(TAG, "Keeping local data (newer or same) for task: " + localTaskToUpdate.description);
+                        // Keep all local data, but update the firestoreDocumentId if it was missing
+                        if (localTaskToUpdate.firestoreDocumentId == null) {
+                            localTaskToUpdate.firestoreDocumentId = cloudTask.firestoreDocumentId;
+                        }
                     }
-                    localTaskToUpdate.manualPosition = cloudTask.manualPosition;
                     
                     taskDao.update(localTaskToUpdate);
                 } else {

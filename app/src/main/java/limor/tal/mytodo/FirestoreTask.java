@@ -57,6 +57,8 @@ public class FirestoreTask {
         task.reminderOffset = this.reminderOffset;
         task.reminderDays = this.reminderDays;
         task.manualPosition = this.manualPosition;
+        task.createdAt = this.createdAt;
+        task.updatedAt = this.updatedAt;
         return task;
     }
 
@@ -76,7 +78,8 @@ public class FirestoreTask {
         firestoreTask.reminderOffset = task.reminderOffset;
         firestoreTask.reminderDays = task.reminderDays;
         firestoreTask.manualPosition = task.manualPosition;
-        firestoreTask.updatedAt = System.currentTimeMillis();
+        firestoreTask.createdAt = task.createdAt;
+        firestoreTask.updatedAt = task.updatedAt;
         firestoreTask.syncStatus = "pending";
         return firestoreTask;
     }

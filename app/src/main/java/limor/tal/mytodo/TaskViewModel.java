@@ -58,10 +58,16 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public void insert(Task task) {
+        // Set timestamps before inserting
+        long currentTime = System.currentTimeMillis();
+        task.createdAt = currentTime;
+        task.updatedAt = currentTime;
         repository.insert(task);
     }
 
     public void update(Task task) {
+        // Set updatedAt timestamp before updating
+        task.updatedAt = System.currentTimeMillis();
         repository.update(task);
         // Force refresh of allTasks to ensure UI gets updated data
         // This will trigger the observer in MainActivity which calls updateTasksByCategory()
@@ -81,8 +87,10 @@ public class TaskViewModel extends AndroidViewModel {
     }
 
     public void updateTaskOrder(List<Task> tasks) {
+        long currentTime = System.currentTimeMillis();
         for (int i = 0; i < tasks.size(); i++) {
             tasks.get(i).priority = i;
+            tasks.get(i).updatedAt = currentTime; // Set updatedAt for all tasks being reordered
         }
         repository.updateTasks(tasks);
         // Force refresh of allTasks to ensure UI gets updated data

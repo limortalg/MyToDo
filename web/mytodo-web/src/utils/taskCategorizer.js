@@ -102,8 +102,6 @@ export class TaskCategorizer {
       } else {
         // Always map dayOfWeek to current language first
         const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
-        console.log('DEBUG: Task dayOfWeek:', task.dayOfWeek, 'mapped to:', mappedDayOfWeek);
-        console.log('DEBUG: daysOfWeek array:', daysOfWeek);
         
         if (mappedDayOfWeek === waitingCategory) {
           // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
@@ -130,7 +128,6 @@ export class TaskCategorizer {
         } else {
           // Task has a specific day of the week
           category = mappedDayOfWeek;
-          console.log('DEBUG: Assigned to specific day category:', category);
         }
       }
     } else if (task.dayOfWeek === null) {
@@ -175,26 +172,19 @@ export class TaskCategorizer {
     // Add task to appropriate category
     if (category === immediateOption) {
       immediateTasks.push(task);
-      console.log('DEBUG: Task added to immediateTasks:', task.description);
     } else if (category === soonOption) {
       soonTasks.push(task);
-      console.log('DEBUG: Task added to soonTasks:', task.description);
     } else if (category === waitingCategory) {
       waitingTasks.push(task);
-      console.log('DEBUG: Task added to waitingTasks:', task.description);
     } else if (category === completedCategory) {
       completedTasks.push(task);
-      console.log('DEBUG: Task added to completedTasks:', task.description);
     } else {
       // Find the day index for this category
       const dayIndex = daysOfWeek.indexOf(category);
-      console.log('DEBUG: Task category:', category, 'dayIndex:', dayIndex);
       if (dayIndex >= 3 && dayIndex <= 9) {
         const dayTasksIndex = dayIndexToTaskIndex[dayIndex]; // Use the mapping
-        console.log('DEBUG: dayTasksIndex:', dayTasksIndex, 'for task:', task.description);
         if (dayTasksIndex >= 0 && dayTasksIndex < dayTasks.length) {
           dayTasks[dayTasksIndex].push(task);
-          console.log('DEBUG: Task added to dayTasks[', dayTasksIndex, ']:', task.description);
         }
       } else {
         console.warn('Unknown day category:', category);
@@ -236,9 +226,6 @@ export class TaskCategorizer {
     dayIndices.forEach((dayIndex, taskIndex) => {
       dayIndexToTaskIndex[dayIndex] = taskIndex;
     });
-    console.log('DEBUG: todayDayOfWeek:', todayDayOfWeek, 'todayIndex:', todayIndex);
-    console.log('DEBUG: dayIndices:', dayIndices);
-    console.log('DEBUG: dayIndices mapped to days:', dayIndices.map(i => this.daysOfWeek[i]));
     
 
     // Create category order
