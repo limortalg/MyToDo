@@ -25,6 +25,7 @@ import 'react-datepicker/dist/react-datepicker.css';
 import { registerLocale, setDefaultLocale } from 'react-datepicker';
 import he from 'date-fns/locale/he';
 import en from 'date-fns/locale/en-US';
+import { parse, isValid } from 'date-fns';
 
 // Register locales
 registerLocale('he', he);
@@ -170,6 +171,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
 
   const handleClose = () => {
     setErrors({});
+    setShowDatePicker(false);
     onClose();
   };
 
@@ -279,61 +281,37 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
                   <Box sx={{ flex: 1, position: 'relative' }}>
-                    <DatePicker
-                      selected={formData.dueDate}
-                      onChange={(date) => {
-                        handleDateChange('dueDate')(date);
+                    <input
+                      type="date"
+                      value={formData.dueDate ? formData.dueDate.toISOString().split('T')[0] : ''}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value) {
+                          handleDateChange('dueDate')(new Date(value));
+                        } else {
+                          handleDateChange('dueDate')(null);
+                        }
                       }}
-                      dateFormat="dd/MM/yyyy"
-                      locale={language === 'he' ? 'he' : 'en'}
-                      isRTL={isRTL}
-                      showPopperArrow={false}
-                      placeholderText="DD/MM/YYYY"
-                      withPortal
-                      popperProps={{
-                        style: { zIndex: 9999 },
-                        placement: 'bottom-start'
+                      style={{
+                        width: '100%',
+                        padding: '16.5px 14px',
+                        border: '1px solid rgba(0, 0, 0, 0.23)',
+                        borderRadius: '4px',
+                        fontSize: '16px',
+                        fontFamily: 'inherit',
+                        direction: isRTL ? 'rtl' : 'ltr',
+                        textAlign: isRTL ? 'right' : 'left',
+                        backgroundColor: 'transparent'
                       }}
-                      customInput={
-                        <TextField
-                          fullWidth
-                          placeholder="DD/MM/YYYY"
-                          InputProps={{
-                            endAdornment: (
-                              <IconButton
-                                size="small"
-                                sx={{ 
-                                  position: 'absolute',
-                                  right: 8,
-                                  top: '50%',
-                                  transform: 'translateY(-50%)',
-                                  pointerEvents: 'none'
-                                }}
-                              >
-                                <CalendarTodayIcon fontSize="small" />
-                              </IconButton>
-                            )
-                          }}
-                          sx={{
-                            ...getInputStyle(),
-                            '& .MuiInputBase-root': {
-                              ...getInputStyle(),
-                              cursor: 'pointer',
-                              paddingRight: '40px'
-                            },
-                            '& input': {
-                              direction: isRTL ? 'rtl' : 'ltr',
-                              textAlign: isRTL ? 'right' : 'left',
-                              cursor: 'pointer'
-                            }
-                          }}
-                        />
-                      }
                     />
                   </Box>
                   {formData.dueDate && (
                     <IconButton 
-                      onClick={() => handleDateChange('dueDate')(null)}
+                      onClick={() => {
+                        console.log('Clear button clicked!');
+                        handleDateChange('dueDate')(null);
+                        setDateText('');
+                      }}
                       color="error"
                       size="small"
                     >
@@ -373,19 +351,19 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                           handleChange('reminderOffset')(null);
                         }
                       }}
-                      fullWidth
+                          fullWidth 
                       inputProps={{
                         lang: language === 'he' ? 'he-IL' : 'en-US',
                         dir: isRTL ? 'rtl' : 'ltr'
                       }}
-                      sx={{
+                          sx={{
                         ...getInputStyle(),
                         '& .MuiInputBase-root': {
                           ...getInputStyle()
                         },
                         '& input': {
                           direction: isRTL ? 'rtl' : 'ltr',
-                          textAlign: isRTL ? 'right' : 'left'
+                              textAlign: isRTL ? 'right' : 'left'
                         }
                       }}
                     />

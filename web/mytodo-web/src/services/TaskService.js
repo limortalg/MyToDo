@@ -78,8 +78,6 @@ export class TaskService {
   async getTasks() {
     try {
       const userId = this.getCurrentUserId();
-      console.log('🔍 TaskService: Getting tasks for userId:', userId);
-      console.log('🔍 TaskService: Collection:', this.collectionName);
       
       const q = query(
         collection(this.db, this.collectionName),
@@ -88,24 +86,12 @@ export class TaskService {
       );
       
       const querySnapshot = await getDocs(q);
-      console.log('📄 TaskService: Query returned', querySnapshot.size, 'documents');
-      
       const tasks = [];
       
       querySnapshot.forEach((doc) => {
-        console.log('📄 TaskService: Processing document:', doc.id, doc.data());
         const task = Task.fromFirestore(doc.id, doc.data());
-        console.log('✅ TaskService: Created task:', {
-          id: task.id,
-          description: task.description,
-          userId: task.userId,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt
-        });
         tasks.push(task);
       });
-      
-      console.log('📋 TaskService: Returning', tasks.length, 'tasks');
       return tasks;
     } catch (error) {
       console.error('❌ TaskService: Error getting tasks:', error);

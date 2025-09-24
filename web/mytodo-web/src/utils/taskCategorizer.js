@@ -83,13 +83,6 @@ export class TaskCategorizer {
                    daysOfWeek, dayIndices, immediateOption, soonOption, waitingCategory, 
                    completedCategory, noneOption, todayMillis, nextWeekMillis) {
     
-    console.log('Processing single task:', task.description, {
-      isRecurring: task.isRecurring,
-      recurrenceType: task.recurrenceType,
-      dayOfWeek: task.dayOfWeek,
-      dueDate: task.dueDate,
-      isCompleted: task.isCompleted
-    });
 
     // Check if this is a daily recurring task
     const isDailyRecurring = task.isRecurring && 
@@ -100,7 +93,6 @@ export class TaskCategorizer {
     if (task.isCompleted && task.completionDate != null && !task.isRecurring) {
       // Only NON-recurring completed tasks go to the Completed category
       category = completedCategory;
-      console.log('Non-recurring completed task assigned to Completed category:', task.description);
     } else if (task.isCompleted && !task.isRecurring) {
       // Task is completed but missing completion date
       console.warn('Completed task missing completion date, categorizing by day:', task.description);
@@ -108,7 +100,6 @@ export class TaskCategorizer {
     } else if (task.dayOfWeek != null) {
       // Always map dayOfWeek to current language first
       const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
-      console.log('Task dayOfWeek mapped:', task.dayOfWeek, '->', mappedDayOfWeek);
       
       if (mappedDayOfWeek === waitingCategory) {
         // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
@@ -158,7 +149,6 @@ export class TaskCategorizer {
       category = waitingCategory;
     }
 
-    console.log('Task categorized as:', category, 'for task:', task.description);
 
     // Add task to appropriate category
     if (category === immediateOption) {
@@ -186,7 +176,6 @@ export class TaskCategorizer {
 
   // Main categorization method
   categorizeTasks(tasks) {
-    console.log('Categorizing', tasks.length, 'tasks');
 
     // Get current date and next week's date for categorization
     const today = new Date();
@@ -221,8 +210,6 @@ export class TaskCategorizer {
     categoryOrder.push(this.waitingCategory);
     categoryOrder.push(this.completedCategory);
 
-    console.log('Category order:', categoryOrder);
-    console.log('Day indices:', dayIndices);
 
     // Initialize category lists
     const immediateTasks = [];
@@ -233,18 +220,12 @@ export class TaskCategorizer {
 
     // Process each task
     tasks.forEach(task => {
-      console.log('Processing task:', task.description, {
-        isRecurring: task.isRecurring,
-        recurrenceType: task.recurrenceType,
-        isCompleted: task.isCompleted
-      });
 
       // For all recurring tasks, always process them regardless of completion status
       const isRecurring = task.isRecurring;
 
       // Always route non-recurring completed tasks to Completed category
       if (!isRecurring && task.isCompleted) {
-        console.log('Non-recurring completed task routed to completed category:', task.description);
         completedTasks.push(task);
         return;
       }
@@ -273,7 +254,6 @@ export class TaskCategorizer {
           
           // Add directly to the specific day category
           dayTasks[i].push(taskCopy);
-          console.log('Daily recurring task added to', this.daysOfWeek[dayIndices[i]], ':', taskCopy.description);
         }
       } else if (isRecurring) {
         // For weekly, bi-weekly, monthly, yearly recurring tasks
@@ -290,7 +270,6 @@ export class TaskCategorizer {
                                this.immediateOption, this.soonOption, this.waitingCategory, 
                                this.completedCategory, this.noneOption, todayMillis, nextWeekMillis);
           
-          console.log('Recurring task (non-daily) added to appropriate category:', task.description);
         }
       } else {
         // Process regular task
@@ -352,7 +331,6 @@ export class TaskCategorizer {
       }
     });
 
-    console.log('Final categorized tasks:', categorizedTasks.length, 'items');
     return categorizedTasks;
   }
 

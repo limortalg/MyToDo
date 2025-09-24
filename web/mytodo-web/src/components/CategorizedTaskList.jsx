@@ -57,7 +57,6 @@ const CategorizedTaskList = ({
   const categorizedTasks = useMemo(() => {
     if (!filteredTasks.length) return [];
     
-    console.log('Categorizing filtered tasks:', filteredTasks.length);
     return categorizer.categorizeTasks(filteredTasks);
   }, [filteredTasks, categorizer]);
 

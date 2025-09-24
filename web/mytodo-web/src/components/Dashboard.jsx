@@ -43,21 +43,7 @@ const Dashboard = ({ taskService, user }) => {
   const loadTasks = async () => {
     try {
       setLoading(true);
-      console.log('🔄 Dashboard: Loading tasks...');
       const userTasks = await taskService.getTasks();
-      console.log('📋 Dashboard: Loaded tasks:', userTasks.length);
-      
-      // Debug: Log all task details
-      userTasks.forEach((task, index) => {
-        console.log(`Task ${index + 1}:`, {
-          id: task.id,
-          description: task.description,
-          isCompleted: task.isCompleted,
-          dueDate: task.dueDate,
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt
-        });
-      });
       
       setTasks(userTasks);
     } catch (error) {
