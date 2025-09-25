@@ -135,20 +135,25 @@ public class FirestoreService {
 
     // Delete a task from Firestore
     public void deleteTask(String documentId, FirestoreCallback callback) {
+        Log.d(TAG, "=== FIRESTORE DELETE DEBUG START ===");
+        Log.d(TAG, "Attempting to delete task from Firestore with documentId: " + documentId);
+        
         db.collection(COLLECTION_TASKS)
                 .document(documentId)
                 .delete()
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "Task deleted successfully");
+                        Log.d(TAG, "SUCCESS: Task deleted from Firestore successfully - documentId: " + documentId);
+                        Log.d(TAG, "=== FIRESTORE DELETE DEBUG END (SUCCESS) ===");
                         callback.onSuccess(null);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(Exception e) {
-                        Log.e(TAG, "Error deleting task", e);
+                        Log.e(TAG, "ERROR: Failed to delete task from Firestore - documentId: " + documentId + ", Error: " + e.getMessage(), e);
+                        Log.d(TAG, "=== FIRESTORE DELETE DEBUG END (ERROR) ===");
                         callback.onError("Failed to delete task: " + e.getMessage());
                     }
                 });

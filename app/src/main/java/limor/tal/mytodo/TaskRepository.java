@@ -71,10 +71,20 @@ public class TaskRepository {
     }
 
     public void delete(Task task) {
+        Log.d("MyToDo", "=== TASK REPOSITORY DELETE DEBUG START ===");
+        Log.d("MyToDo", "Repository delete called for task - ID: " + task.id + ", Description: " + task.description);
+        Log.d("MyToDo", "Task firestoreDocumentId: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
+        
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            Log.d("MyToDo", "Deleting task: " + task.description);
-            taskDao.delete(task);
-            Log.d("MyToDo", "Task deleted successfully: " + task.description);
+            Log.d("MyToDo", "Repository: Executing database delete for task: " + task.description);
+            try {
+                taskDao.delete(task);
+                Log.d("MyToDo", "Repository: Database delete successful for task: " + task.description);
+                Log.d("MyToDo", "=== TASK REPOSITORY DELETE DEBUG END (SUCCESS) ===");
+            } catch (Exception e) {
+                Log.e("MyToDo", "Repository: Database delete failed for task: " + task.description + " - " + e.getMessage(), e);
+                Log.d("MyToDo", "=== TASK REPOSITORY DELETE DEBUG END (ERROR) ===");
+            }
         });
     }
 

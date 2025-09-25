@@ -190,8 +190,14 @@ public class SyncManager {
             
             // For now, get all local tasks (we can optimize this later)
             List<limor.tal.mytodo.Task> localChanges = taskDao.getAllTasksSync();
+            Log.d(TAG, "=== SYNC DEBUG START ===");
             Log.d(TAG, "Incremental sync: Found " + localChanges.size() + " local tasks");
             
+            // DEBUG: Log all local tasks
+            for (limor.tal.mytodo.Task localTask : localChanges) {
+                Log.d(TAG, "Local task - ID: " + localTask.id + ", Description: " + localTask.description + 
+                      ", FirestoreID: " + (localTask.firestoreDocumentId != null ? localTask.firestoreDocumentId : "NULL"));
+            }
             
             // Download cloud tasks
             firestoreService.loadUserTasks(new FirestoreService.TasksCallback() {
@@ -199,6 +205,11 @@ public class SyncManager {
                 public void onTasksLoaded(List<limor.tal.mytodo.Task> cloudTasks) {
                     Log.d(TAG, "Incremental sync: Downloaded " + cloudTasks.size() + " cloud tasks");
                     
+                    // DEBUG: Log all cloud tasks
+                    for (limor.tal.mytodo.Task cloudTask : cloudTasks) {
+                        Log.d(TAG, "Cloud task - ID: " + cloudTask.id + ", Description: " + cloudTask.description + 
+                              ", FirestoreID: " + (cloudTask.firestoreDocumentId != null ? cloudTask.firestoreDocumentId : "NULL"));
+                    }
                     
                     // Merge local and cloud changes
                     mergeTasks(localChanges, cloudTasks, callback);
@@ -333,13 +344,20 @@ public class SyncManager {
             
             // Find tasks to delete (local tasks that are no longer in cloud)
             List<limor.tal.mytodo.Task> tasksToDelete = new ArrayList<>();
+            Log.d(TAG, "=== MERGE DEBUG: Checking for tasks to delete ===");
             for (limor.tal.mytodo.Task localTask : localChanges) {
+                Log.d(TAG, "Checking local task: " + localTask.description + " (FirestoreID: " + 
+                      (localTask.firestoreDocumentId != null ? localTask.firestoreDocumentId : "NULL") + ")");
                 if (localTask.firestoreDocumentId != null && !cloudMap.containsKey(localTask.firestoreDocumentId)) {
-                    Log.d(TAG, "Task to delete (no longer in cloud): " + localTask.description);
+                    Log.d(TAG, "Task to delete (no longer in cloud): " + localTask.description + " (FirestoreID: " + localTask.firestoreDocumentId + ")");
                     tasksToDelete.add(localTask);
+                } else if (localTask.firestoreDocumentId != null) {
+                    Log.d(TAG, "Local task still exists in cloud: " + localTask.description + " (FirestoreID: " + localTask.firestoreDocumentId + ")");
+                } else {
+                    Log.d(TAG, "Local task has no FirestoreID: " + localTask.description);
                 }
             }
-            Log.d(TAG, "Found " + tasksToDelete.size() + " tasks to delete");
+            Log.d(TAG, "Found " + tasksToDelete.size() + " tasks to delete from local database");
             
             // Update local database with cloud changes (run on background thread)
             executorService.execute(() -> updateLocalDatabase(tasksToUpdate, tasksToInsert, tasksToDelete, callback));
@@ -410,13 +428,21 @@ public class SyncManager {
             }
             
             // Insert new tasks
+            Log.d(TAG, "=== UPDATE DATABASE DEBUG: Inserting " + tasksToInsert.size() + " new tasks ===");
             for (limor.tal.mytodo.Task task : tasksToInsert) {
+                Log.d(TAG, "Inserting new cloud task - ID: " + task.id + ", Description: " + task.description + 
+                      ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
                 taskDao.insert(task);
+                Log.d(TAG, "Successfully inserted task: " + task.description);
             }
             
             // Delete tasks that are no longer in cloud
+            Log.d(TAG, "=== UPDATE DATABASE DEBUG: Deleting " + tasksToDelete.size() + " tasks ===");
             for (limor.tal.mytodo.Task task : tasksToDelete) {
+                Log.d(TAG, "Deleting local task (no longer in cloud) - ID: " + task.id + ", Description: " + task.description + 
+                      ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
                 taskDao.delete(task);
+                Log.d(TAG, "Successfully deleted task: " + task.description);
             }
             
             // Update last sync timestamp
