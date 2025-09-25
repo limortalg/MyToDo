@@ -1303,8 +1303,35 @@ public class MainActivity extends AppCompatActivity {
                    selectedTask = null;
                    updateButtonStates();
                    
-                   // Sync task deletion to cloud if user is authenticated
-                   if (authService.isUserSignedIn()) {
+                   // Delete from cloud if user is authenticated and task has a firestoreDocumentId
+                   if (authService.isUserSignedIn() && task.firestoreDocumentId != null) {
+                       // Directly delete from cloud for immediate effect
+                       FirestoreService firestoreService = new FirestoreService();
+                       firestoreService.deleteTask(task.firestoreDocumentId, new FirestoreService.FirestoreCallback() {
+                           @Override
+                           public void onSuccess(Object result) {
+                               Log.d("MyToDo", "Task deleted from cloud successfully: " + task.description);
+                           }
+
+                           @Override
+                           public void onError(String error) {
+                               Log.e("MyToDo", "Failed to delete task from cloud: " + error);
+                               // If cloud deletion fails, trigger a sync to handle it properly
+                               syncManager.forceSync(new SyncManager.SyncCallback() {
+                                   @Override
+                                   public void onSyncComplete(boolean success, String message) {
+                                       Log.d("MyToDo", "Task deletion sync fallback: " + (success ? "Success" : "Failed") + " - " + message);
+                                   }
+
+                                   @Override
+                                   public void onSyncProgress(String message) {
+                                       Log.d("MyToDo", "Task deletion sync fallback progress: " + message);
+                                   }
+                               });
+                           }
+                       });
+                   } else if (authService.isUserSignedIn()) {
+                       // If no firestoreDocumentId, trigger sync to handle the deletion
                        syncManager.forceSync(new SyncManager.SyncCallback() {
                            @Override
                            public void onSyncComplete(boolean success, String message) {
