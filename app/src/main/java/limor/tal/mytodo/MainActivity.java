@@ -151,6 +151,9 @@ public class MainActivity extends AppCompatActivity {
             }
         }
         
+        // Check and request battery optimization exemption for better background execution
+        checkBatteryOptimization();
+        
         recyclerView = findViewById(R.id.recyclerView);
         viewModel = new ViewModelProvider(this).get(TaskViewModel.class);
         emptyStateTextView = findViewById(R.id.emptyStateTextView);
@@ -1298,68 +1301,51 @@ public class MainActivity extends AppCompatActivity {
                        Log.d("MyToDo", "showDeleteConfirmationDialog: Cancelled reminder for task: " + task.description);
                    }
                    
-                   // DEBUG: Log task details before deletion
-                   Log.d("MyToDo", "=== DELETION DEBUG START ===");
-                   Log.d("MyToDo", "Deleting task - ID: " + task.id + ", Description: " + task.description);
-                   Log.d("MyToDo", "Task firestoreDocumentId: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
-                   Log.d("MyToDo", "User authenticated: " + authService.isUserSignedIn());
-                   
                    // Delete the task
-                   Log.d("MyToDo", "Calling viewModel.delete() for task: " + task.description);
                    viewModel.delete(task);
                    selectedTask = null;
                    updateButtonStates();
-                   Log.d("MyToDo", "Local deletion completed for task: " + task.description);
                    
                    // Delete from cloud if user is authenticated and task has a firestoreDocumentId
                    if (authService.isUserSignedIn() && task.firestoreDocumentId != null) {
-                       Log.d("MyToDo", "Attempting direct cloud deletion for task: " + task.description + " with ID: " + task.firestoreDocumentId);
                        // Directly delete from cloud for immediate effect
                        FirestoreService firestoreService = new FirestoreService();
                        firestoreService.deleteTask(task.firestoreDocumentId, new FirestoreService.FirestoreCallback() {
                            @Override
                            public void onSuccess(Object result) {
-                               Log.d("MyToDo", "SUCCESS: Task deleted from cloud: " + task.description + " (ID: " + task.firestoreDocumentId + ")");
-                               Log.d("MyToDo", "=== DELETION DEBUG END (SUCCESS) ===");
+                               Log.d("MyToDo", "Task deleted from cloud successfully: " + task.description);
                            }
 
                            @Override
                            public void onError(String error) {
-                               Log.e("MyToDo", "ERROR: Failed to delete task from cloud: " + task.description + " - " + error);
-                               Log.d("MyToDo", "Triggering fallback sync for task: " + task.description);
+                               Log.e("MyToDo", "Failed to delete task from cloud: " + error);
                                // If cloud deletion fails, trigger a sync to handle it properly
                                syncManager.forceSync(new SyncManager.SyncCallback() {
                                    @Override
                                    public void onSyncComplete(boolean success, String message) {
-                                       Log.d("MyToDo", "Fallback sync result for task " + task.description + ": " + (success ? "Success" : "Failed") + " - " + message);
-                                       Log.d("MyToDo", "=== DELETION DEBUG END (FALLBACK) ===");
+                                       Log.d("MyToDo", "Task deletion sync fallback: " + (success ? "Success" : "Failed") + " - " + message);
                                    }
 
                                    @Override
                                    public void onSyncProgress(String message) {
-                                       Log.d("MyToDo", "Fallback sync progress for task " + task.description + ": " + message);
+                                       Log.d("MyToDo", "Task deletion sync fallback progress: " + message);
                                    }
                                });
                            }
                        });
                    } else if (authService.isUserSignedIn()) {
-                       Log.d("MyToDo", "No firestoreDocumentId for task: " + task.description + ", triggering sync");
                        // If no firestoreDocumentId, trigger sync to handle the deletion
                        syncManager.forceSync(new SyncManager.SyncCallback() {
                            @Override
                            public void onSyncComplete(boolean success, String message) {
-                               Log.d("MyToDo", "Sync result for task without firestoreDocumentId " + task.description + ": " + (success ? "Success" : "Failed") + " - " + message);
-                               Log.d("MyToDo", "=== DELETION DEBUG END (SYNC) ===");
+                               Log.d("MyToDo", "Task deletion sync: " + (success ? "Success" : "Failed") + " - " + message);
                            }
 
                            @Override
                            public void onSyncProgress(String message) {
-                               Log.d("MyToDo", "Sync progress for task " + task.description + ": " + message);
+                               Log.d("MyToDo", "Task deletion sync progress: " + message);
                            }
                        });
-                   } else {
-                       Log.d("MyToDo", "User not authenticated, skipping cloud deletion for task: " + task.description);
-                       Log.d("MyToDo", "=== DELETION DEBUG END (NO AUTH) ===");
                    }
                    
                    Toast.makeText(this, getString(R.string.task_deleted), Toast.LENGTH_SHORT).show();
@@ -1736,6 +1722,45 @@ public class MainActivity extends AppCompatActivity {
                 }
             } catch (Exception e) {
                 Log.e("MyToDo", "Error checking exact alarm permission", e);
+            }
+        }
+    }
+    
+    private void checkBatteryOptimization() {
+        if (android.os.Build.VERSION.SDK_INT >= 23) {
+            try {
+                android.os.PowerManager powerManager = (android.os.PowerManager) getSystemService(Context.POWER_SERVICE);
+                if (powerManager != null && !powerManager.isIgnoringBatteryOptimizations(getPackageName())) {
+                    Log.d("MyToDo", "App is not exempt from battery optimization, requesting exemption");
+                    
+                    // Show a dialog explaining why battery optimization exemption is needed
+                    new AlertDialog.Builder(this)
+                            .setTitle("Battery Optimization")
+                            .setMessage("To ensure reminders work reliably in the background, please disable battery optimization for this app. This will allow the app to run background tasks even when the device is in power-saving mode.")
+                            .setPositiveButton("Open Settings", (dialog, which) -> {
+                                try {
+                                    Intent intent = new Intent(android.provider.Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS);
+                                    intent.setData(android.net.Uri.parse("package:" + getPackageName()));
+                                    startActivity(intent);
+                                } catch (Exception e) {
+                                    Log.e("MyToDo", "Error opening battery optimization settings", e);
+                                    // Fallback to general app settings
+                                    try {
+                                        Intent intent = new Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                        intent.setData(android.net.Uri.fromParts("package", getPackageName(), null));
+                                        startActivity(intent);
+                                    } catch (Exception fallbackException) {
+                                        Log.e("MyToDo", "Error opening app settings", fallbackException);
+                                    }
+                                }
+                            })
+                            .setNegativeButton("Later", null)
+                            .show();
+                } else {
+                    Log.d("MyToDo", "App is exempt from battery optimization or not supported on this device");
+                }
+            } catch (Exception e) {
+                Log.e("MyToDo", "Error checking battery optimization status", e);
             }
         }
     }

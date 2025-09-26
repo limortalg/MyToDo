@@ -54,8 +54,8 @@ public class ReminderManager {
             return;
         }
         
-        // Create intent for the ReminderService
-        Intent reminderIntent = new Intent(context, ReminderService.class);
+        // Create intent for the NotificationReceiver (more reliable for background execution)
+        Intent reminderIntent = new Intent(context, NotificationReceiver.class);
         reminderIntent.putExtra("task_id", task.id);
         reminderIntent.putExtra("task_description", task.description);
         reminderIntent.putExtra("task_day", task.dayOfWeek);
@@ -63,21 +63,41 @@ public class ReminderManager {
         // Create unique request code for each task
         int requestCode = task.id;
         
-        // Create PendingIntent
-        PendingIntent pendingIntent = PendingIntent.getService(context, requestCode, reminderIntent, 
+        // Create PendingIntent for BroadcastReceiver (more reliable than Service for background)
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, requestCode, reminderIntent, 
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         
         try {
-            // Schedule the alarm
+            // Schedule the alarm with the most reliable method for background execution
             if (android.os.Build.VERSION.SDK_INT >= 31 && alarmManager.canScheduleExactAlarms()) {
+                // Use setAlarmClock for highest priority and immunity to doze mode
+                // This is the most reliable method for critical alarms
+                AlarmManager.AlarmClockInfo alarmClockInfo = new AlarmManager.AlarmClockInfo(triggerTime, pendingIntent);
+                alarmManager.setAlarmClock(alarmClockInfo, pendingIntent);
+                Log.d(TAG, "Scheduled ALARM CLOCK reminder for task: " + task.description + " at " + triggerTime);
+            } else if (android.os.Build.VERSION.SDK_INT >= 23) {
+                // Use setExactAndAllowWhileIdle for API 23+
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
                 Log.d(TAG, "Scheduled exact reminder for task: " + task.description + " at " + triggerTime);
             } else {
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
-                Log.d(TAG, "Scheduled reminder for task: " + task.description + " at " + triggerTime);
+                // Fallback for older Android versions
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+                Log.d(TAG, "Scheduled reminder (fallback) for task: " + task.description + " at " + triggerTime);
             }
+            
+            // Log the actual trigger time for debugging
+            java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            Log.d(TAG, "Reminder will trigger at: " + sdf.format(new java.util.Date(triggerTime)));
+            
         } catch (SecurityException e) {
             Log.e(TAG, "Security exception scheduling reminder for task: " + task.description, e);
+            // Try fallback method
+            try {
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerTime, pendingIntent);
+                Log.d(TAG, "Used fallback method for reminder: " + task.description);
+            } catch (Exception fallbackE) {
+                Log.e(TAG, "Fallback also failed for reminder: " + task.description, fallbackE);
+            }
         } catch (Exception e) {
             Log.e(TAG, "Error scheduling reminder for task: " + task.description, e);
         }
@@ -93,8 +113,8 @@ public class ReminderManager {
             return;
         }
         
-        // Create the same intent that was used to schedule
-        Intent reminderIntent = new Intent(context, ReminderService.class);
+        // Create the same intent that was used to schedule (NotificationReceiver)
+        Intent reminderIntent = new Intent(context, NotificationReceiver.class);
         reminderIntent.putExtra("task_id", task.id);
         reminderIntent.putExtra("task_description", task.description);
         reminderIntent.putExtra("task_day", task.dayOfWeek);
@@ -102,8 +122,8 @@ public class ReminderManager {
         // Create unique request code for each task
         int requestCode = task.id;
         
-        // Create PendingIntent with the same flags
-        PendingIntent pendingIntent = PendingIntent.getService(context, requestCode, reminderIntent, 
+        // Create PendingIntent with the same flags (BroadcastReceiver)
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(context, requestCode, reminderIntent, 
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         
         try {
