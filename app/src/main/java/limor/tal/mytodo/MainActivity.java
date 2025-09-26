@@ -56,6 +56,8 @@ import java.util.Date;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import android.os.Handler;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
 
 public class MainActivity extends AppCompatActivity {
     private TaskViewModel viewModel;
@@ -90,6 +92,9 @@ public class MainActivity extends AppCompatActivity {
     private SyncManager syncManager;
     private FirebaseAuthService authService;
     
+    // Language change receiver
+    private BroadcastReceiver languageChangeReceiver;
+    
 
 
     @Override
@@ -107,6 +112,10 @@ public class MainActivity extends AppCompatActivity {
         // Initialize sync services
         syncManager = new SyncManager(this);
         authService = new FirebaseAuthService(this);
+        
+        // Setup language change receiver
+        // STILL CRASHING - DISABLED FOR NOW
+        // setupLanguageChangeReceiver();
 
 
 
@@ -162,6 +171,13 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = getIntent();
         // Log.d("MyToDo", "onCreate: Stack trace for onCreate call:");
         // Thread.dumpStack();
+        
+        // Handle refresh from widget
+        if (intent != null && intent.getBooleanExtra("refresh_from_widget", false)) {
+            Log.d("MyToDo", "onCreate: Refreshing from widget");
+            // Force refresh the task list
+            viewModel.forceRefreshTasks();
+        }
         
         if (intent != null && "EDIT_TASK_FROM_REMINDER".equals(intent.getAction())) {
             if (isProcessingEditFromReminder) {
@@ -390,6 +406,11 @@ public class MainActivity extends AppCompatActivity {
                             viewModel.update(selectedTask);
                         selectedTask = null;
                         updateButtonStates();
+                        
+                        // Refresh widgets after task completion (only if widgets are installed)
+                        if (WidgetUpdateHelper.hasWidgets(this)) {
+                            WidgetUpdateHelper.refreshAllWidgets(this);
+                        }
                     } else {
                         // Action not allowed, show explanation
                         Toast.makeText(this, getString(R.string.daily_task_wrong_day), Toast.LENGTH_LONG).show();
@@ -665,6 +686,34 @@ public class MainActivity extends AppCompatActivity {
         AppCompatDelegate.setApplicationLocales(appLocale);
         Log.d("MyToDo", "setLocale: Applied app locale: " + (language != null ? language : "en"));
     }
+    
+    private void setupLanguageChangeReceiver() {
+        languageChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if ("limor.tal.mytodo.LANGUAGE_CHANGED".equals(intent.getAction())) {
+                    String newLanguage = intent.getStringExtra("new_language");
+                    Log.d("MyToDo", "Language change received: " + newLanguage);
+                    
+                    // Apply the new language
+                    setLocale(newLanguage);
+                    
+                    // Refresh widgets to show new language (only if widgets are installed)
+                    if (WidgetUpdateHelper.hasWidgets(con   text)) {
+                        WidgetUpdateHelper.refreshAllWidgets(context);
+                    }
+                    
+                    // Recreate the activity to apply language change
+                    recreate();
+                }
+            }
+        };
+        
+        // Register the receiver
+        IntentFilter filter = new IntentFilter("limor.tal.mytodo.LANGUAGE_CHANGED");
+        registerReceiver(languageChangeReceiver, filter);
+    }
+    
     
     private void handleEditTaskFromReminder(Intent intent) {
         Log.d("MyToDo", "handleEditTaskFromReminder: Processing edit intent from reminder");
@@ -1179,6 +1228,11 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.insert(newTask);
                     Log.d("MyToDo", "showTaskDialog: viewModel.insert called for new task: " + newTask.description + ", id: " + newTask.id);
                     
+                    // Refresh widgets after task creation (only if widgets are installed)
+                    if (WidgetUpdateHelper.hasWidgets(this)) {
+                        WidgetUpdateHelper.refreshAllWidgets(this);
+                    }
+                    
                     // Sync new task to cloud if user is authenticated
                     if (authService.isUserSignedIn()) {
                         syncManager.forceSync(new SyncManager.SyncCallback() {
@@ -1232,6 +1286,11 @@ public class MainActivity extends AppCompatActivity {
                     viewModel.update(task);
                     Log.d("MyToDo", "showTaskDialog: viewModel.update called for existing task: " + task.description + ", id: " + task.id);
                     
+                    // Refresh widgets after task update (only if widgets are installed)
+                    if (WidgetUpdateHelper.hasWidgets(this)) {
+                        WidgetUpdateHelper.refreshAllWidgets(this);
+                    }
+                    
                     // Sync updated task to cloud if user is authenticated
                     if (authService.isUserSignedIn()) {
                         syncManager.forceSync(new SyncManager.SyncCallback() {
@@ -1270,6 +1329,17 @@ public class MainActivity extends AppCompatActivity {
             Log.d("MyToDo", "cancelButton: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
             // Log.d("MyToDo", "cancelButton: Stack trace for cancel button click:");
             // Thread.dumpStack();
+            
+            // If this is from a reminder notification, stop the ReminderService
+            if (isProcessingEditFromReminder) {
+                Log.d("MyToDo", "cancelButton: Stopping ReminderService because user cancelled edit from reminder");
+                Intent stopServiceIntent = new Intent(this, ReminderService.class);
+                stopServiceIntent.setAction("STOP_REMINDER");
+                if (task != null) {
+                    stopServiceIntent.putExtra("task_id", task.id);
+                }
+                startService(stopServiceIntent);
+            }
             
             // Log.d("MyToDo", "cancelButton: About to call dialog.dismiss()");
             dialog.dismiss();
@@ -2363,6 +2433,15 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         Log.d("MyToDo", "onDestroy: Called");
+        
+        // Unregister the language change receiver
+        if (languageChangeReceiver != null) {
+            try {
+                unregisterReceiver(languageChangeReceiver);
+            } catch (Exception e) {
+                Log.e("MyToDo", "Error unregistering language change receiver", e);
+            }
+        }
         
         // Shutdown executor service to prevent memory leaks
         if (executorService != null && !executorService.isShutdown()) {

@@ -1,6 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">המשימות שלי</string>
+    <string name="widget_name">ווידג\'ט המשימות שלי</string>
+    <string name="refresh">רענן</string>
+    <string name="open_app">פתח אפליקציה</string>
     <string name="description">תיאור</string>
     <string name="search">חפש משימות</string>
     <string name="search_tasks">חפש משימות</string>
@@ -120,4 +123,8 @@
     <string name="reminder_behavior">התנהגות תזכורת</string>
     <string name="back">חזור</string>
     <string name="settings">הגדרות</string>
+    <string name="all_tasks">הכל</string>
+    <string name="today_tasks">היום</string>
+    <string name="my_tasks">המשימות שלי</string>
+    <string name="no_tasks_today">אין משימות להיום</string>
 </resources>

@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#80000000"
+    android:padding="8dp"
+    android:clickable="false"
+    android:focusable="false">
+
+    <!-- Header with app name and icon buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/widget_title"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="@string/app_name"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:clickable="true"
+            android:focusable="true"
+            android:background="?android:attr/selectableItemBackground"
+            android:padding="4dp" />
+
+        <!-- Two separate toggle buttons -->
+        <Button
+            android:id="@+id/widget_toggle_all"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
+            android:text="All"
+            android:textSize="11sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/modern_toggle_bg"
+            android:layout_marginEnd="2dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center" />
+            
+        <Button
+            android:id="@+id/widget_toggle_today"
+            android:layout_width="60dp"
+            android:layout_height="40dp"
+            android:text="Today"
+            android:textSize="11sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/modern_toggle_bg"
+            android:layout_marginEnd="6dp"
+            android:fontFamily="sans-serif-medium"
+            android:gravity="center" />
+
+        <Button
+            android:id="@+id/widget_refresh"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:text="⟳"
+            android:textSize="18sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/modern_button_selector"
+            android:fontFamily="sans-serif-medium" />
+
+    </LinearLayout>
+
+    <!-- Tasks list -->
+    <LinearLayout
+        android:id="@+id/widget_tasks_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:clickable="false"
+        android:focusable="false" />
+
+
+</LinearLayout>

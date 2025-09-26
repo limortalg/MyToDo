@@ -242,11 +242,13 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
             String newLang = currentLang.equals("he") ? "en" : "he";
             prefs.edit().putString("language", newLang).apply();
             
-            // Restart activity to apply language change
-            Intent intent = new Intent(this, SettingsActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            finish();
-            startActivity(intent);
+            // Notify MainActivity about language change
+            Intent languageChangeIntent = new Intent("limor.tal.mytodo.LANGUAGE_CHANGED");
+            languageChangeIntent.putExtra("new_language", newLang);
+            sendBroadcast(languageChangeIntent);
+            
+            // Recreate this activity to apply language change
+            recreate();
         });
         
         // Update language button text

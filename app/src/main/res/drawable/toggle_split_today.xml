@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    
+    <!-- Background track (gray) -->
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#E0E0E0"
+                android:endColor="#C0C0C0"
+                android:angle="90" />
+            <corners android:radius="20dp" />
+            <stroke android:width="1dp" android:color="#B0B0B0" />
+        </shape>
+    </item>
+    
+    <!-- Right side - Today (active/green) - covers "Today" text -->
+    <item android:width="55dp" android:left="65dp">
+        <shape android:shape="rectangle">
+            <gradient
+                android:startColor="#4CAF50"
+                android:endColor="#388E3C"
+                android:angle="90" />
+            <corners android:radius="18dp" />
+        </shape>
+    </item>
+    
+</layer-list>

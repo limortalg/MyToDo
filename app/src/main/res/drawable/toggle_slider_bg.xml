@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    
+    <!-- Toggle track background -->
+    <gradient
+        android:startColor="#E0E0E0"
+        android:endColor="#C0C0C0"
+        android:angle="90" />
+    
+    <!-- Rounded track -->
+    <corners android:radius="20dp" />
+    
+    <!-- Track border -->
+    <stroke
+        android:width="1dp"
+        android:color="#B0B0B0" />
+    
+    <!-- Padding for track -->
+    <padding
+        android:left="4dp"
+        android:right="4dp"
+        android:top="4dp"
+        android:bottom="4dp" />
+    
+</shape>
