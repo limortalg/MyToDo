@@ -188,6 +188,13 @@ public class ReminderService extends Service {
             vibrator.cancel();
         }
         
+        // Cancel the notification
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            notificationManager.cancel(NOTIFICATION_ID);
+            Log.d(TAG, "Cancelled notification in stopReminder");
+        }
+        
         isPlaying = false;
     }
     
@@ -343,6 +350,13 @@ public class ReminderService extends Service {
         
         // Stop current reminder
         stopReminder();
+        
+        // Cancel the notification
+        NotificationManager notificationManager = getSystemService(NotificationManager.class);
+        if (notificationManager != null) {
+            notificationManager.cancel(NOTIFICATION_ID);
+            Log.d(TAG, "Cancelled notification for task: " + taskId);
+        }
         
         // Stop the service
         stopSelf();
