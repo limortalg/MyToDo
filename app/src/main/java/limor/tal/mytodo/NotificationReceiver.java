@@ -192,6 +192,14 @@ public class NotificationReceiver extends BroadcastReceiver {
     private void handleDeleteAction(Context context, String taskDescription, int taskId) {
         // Cancel the notification
         NotificationManagerCompat.from(context).cancel(taskId);
+        
+        // Stop the ReminderService
+        Intent stopServiceIntent = new Intent(context, ReminderService.class);
+        stopServiceIntent.setAction("STOP_REMINDER");
+        stopServiceIntent.putExtra("task_id", taskId);
+        context.startService(stopServiceIntent);
+        Log.d("MyToDo", "Stopped ReminderService for delete action");
+        
         Log.d("MyToDo", "Deleting task from notification: " + taskDescription + ", ID: " + taskId);
 
         // Delete task from database
@@ -224,6 +232,14 @@ public class NotificationReceiver extends BroadcastReceiver {
         try {
             // Cancel the notification
             NotificationManagerCompat.from(context).cancel(taskId);
+            
+            // Stop the ReminderService
+            Intent stopServiceIntent = new Intent(context, ReminderService.class);
+            stopServiceIntent.setAction("STOP_REMINDER");
+            stopServiceIntent.putExtra("task_id", taskId);
+            context.startService(stopServiceIntent);
+            Log.d("MyToDo", "Stopped ReminderService for edit action");
+            
             Log.d("MyToDo", "Opening edit dialog for task from notification: " + taskDescription + ", ID: " + taskId);
 
             // Open MainActivity with edit intent

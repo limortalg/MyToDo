@@ -95,6 +95,18 @@ public class MainActivity extends AppCompatActivity {
     // Language change receiver
     private BroadcastReceiver languageChangeReceiver;
     
+    // Task refresh receiver
+    private BroadcastReceiver taskRefreshReceiver = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Log.d("MyToDo", "Task refresh broadcast received from widget");
+            // Refresh the task list when widget completes a task
+            if (viewModel != null) {
+                viewModel.forceRefreshTasks();
+            }
+        }
+    };
+    
 
 
     @Override
@@ -112,6 +124,10 @@ public class MainActivity extends AppCompatActivity {
         // Initialize sync services
         syncManager = new SyncManager(this);
         authService = new FirebaseAuthService(this);
+        
+        // Run migration to convert Hebrew values to English
+        Log.d("MyToDo", "MainActivity: Starting migration to English values");
+        TaskMigrationUtils.migrateTasksToEnglishAsync(this);
         
         // Setup language change receiver
         // STILL CRASHING - DISABLED FOR NOW
@@ -177,6 +193,33 @@ public class MainActivity extends AppCompatActivity {
             Log.d("MyToDo", "onCreate: Refreshing from widget");
             // Force refresh the task list
             viewModel.forceRefreshTasks();
+        }
+        
+        // Handle add task from widget
+        Log.d("MyToDo", "onCreate: Checking for add task intent. Intent: " + intent);
+        if (intent != null) {
+            Log.d("MyToDo", "onCreate: Intent action: " + intent.getAction());
+            Log.d("MyToDo", "onCreate: Intent extras: " + intent.getExtras());
+            Log.d("MyToDo", "onCreate: Intent flags: " + intent.getFlags());
+            Log.d("MyToDo", "onCreate: Intent component: " + intent.getComponent());
+            Log.d("MyToDo", "onCreate: Intent data: " + intent.getData());
+        }
+        
+        if (intent != null && intent.getBooleanExtra("open_add_task", false)) {
+            String presetDay = intent.getStringExtra("preset_day");
+            Log.d("MyToDo", "onCreate: Opening add task dialog from widget with preset day: " + presetDay);
+            Log.d("MyToDo", "onCreate: Intent extras: " + intent.getExtras());
+            Log.d("MyToDo", "onCreate: Scheduling add task dialog to open in 500ms");
+            // Schedule to open add task dialog after UI is ready
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                Log.d("MyToDo", "onCreate: Handler executing - about to call showTaskDialogWithPreset");
+                showTaskDialogWithPreset(presetDay);
+            }, 500); // Small delay to ensure UI is ready
+        } else {
+            Log.d("MyToDo", "onCreate: No add task intent found. Intent: " + intent);
+            if (intent != null) {
+                Log.d("MyToDo", "onCreate: Intent extras: " + intent.getExtras());
+            }
         }
         
         if (intent != null && "EDIT_TASK_FROM_REMINDER".equals(intent.getAction())) {
@@ -712,6 +755,10 @@ public class MainActivity extends AppCompatActivity {
         // Register the receiver
         IntentFilter filter = new IntentFilter("limor.tal.mytodo.LANGUAGE_CHANGED");
         registerReceiver(languageChangeReceiver, filter);
+        
+        // Also register task refresh receiver
+        IntentFilter taskRefreshFilter = new IntentFilter("limor.tal.mytodo.REFRESH_TASKS");
+        registerReceiver(taskRefreshReceiver, taskRefreshFilter);
     }
     
     
@@ -945,12 +992,18 @@ public class MainActivity extends AppCompatActivity {
         dayOfWeekSpinner.setAdapter(dayAdapter);
         if (selectedDayOfWeek != null) {
             try {
+                Log.d("MyToDo", "showTaskDialog: Setting spinner for selectedDayOfWeek: " + selectedDayOfWeek);
+                Log.d("MyToDo", "showTaskDialog: daysOfWeek array: " + java.util.Arrays.toString(daysOfWeek));
                 String mapped = mapDayOfWeekToCurrentLanguage(selectedDayOfWeek, daysOfWeek);
+                Log.d("MyToDo", "showTaskDialog: Mapped result: " + mapped);
                 int idx = findIndex(daysOfWeek, mapped);
+                Log.d("MyToDo", "showTaskDialog: Found index: " + idx);
                 if (idx >= 0 && idx < daysOfWeek.length) {
                     dayOfWeekSpinner.setSelection(idx);
+                    Log.d("MyToDo", "showTaskDialog: Set spinner selection to index: " + idx + " (" + daysOfWeek[idx] + ")");
                 } else {
                     dayOfWeekSpinner.setSelection(0);
+                    Log.d("MyToDo", "showTaskDialog: Could not find mapped day, set to index 0 (" + daysOfWeek[0] + ")");
                 }
             } catch (Exception e) {
                 Log.e("MyToDo", "showTaskDialog: Error setting day of week spinner selection", e);
@@ -1197,12 +1250,16 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (task == null) {
-                    // Calculate priority based on whether task has time or not
-                    int defaultPriority = calculateNewTaskPriority(selectedDueTime, selectedDayOfWeek);
+                    // Convert Hebrew day name to English for database storage
+                    String englishDayOfWeek = TaskTranslationUtils.convertHebrewToEnglishDayName(selectedDayOfWeek);
+                    String englishRecurrenceType = recurringCheckBox.isChecked() ? 
+                        TaskTranslationUtils.convertHebrewToEnglishRecurrenceType(getSelectedRecurrenceType(recurrenceTypeSpinner)) : null;
                     
-                    Task newTask = new Task(description, selectedDueDate, selectedDayOfWeek, recurringCheckBox.isChecked(),
-                            recurringCheckBox.isChecked() ? getSelectedRecurrenceType(recurrenceTypeSpinner) : null,
-                            false, defaultPriority);
+                    // Calculate priority based on whether task has time or not
+                    int defaultPriority = calculateNewTaskPriority(selectedDueTime, englishDayOfWeek);
+                    
+                    Task newTask = new Task(description, selectedDueDate, englishDayOfWeek, recurringCheckBox.isChecked(),
+                            englishRecurrenceType, false, defaultPriority);
                     newTask.dueTime = selectedDueTime;
                     newTask.reminderOffset = reminderOffset;
                     newTask.reminderDays = getReminderDaysString(reminderDayCheckBoxes, recurringCheckBox.isChecked());
@@ -1254,17 +1311,22 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("MyToDo", "showTaskDialog: Cancelled existing reminder for task: " + task.description + ", id: " + task.id);
                     }
                     
+                    // Convert Hebrew day name to English for database storage
+                    String englishDayOfWeek = TaskTranslationUtils.convertHebrewToEnglishDayName(selectedDayOfWeek);
+                    String englishRecurrenceType = task.isRecurring ? 
+                        TaskTranslationUtils.convertHebrewToEnglishRecurrenceType(getSelectedRecurrenceType(recurrenceTypeSpinner)) : null;
+                    
                     task.description = description;
                     task.dueDate = selectedDueDate;
                     task.dueTime = selectedDueTime;
-                    task.dayOfWeek = selectedDayOfWeek;
+                    task.dayOfWeek = englishDayOfWeek;
                     task.isRecurring = recurringCheckBox.isChecked();
-                    task.recurrenceType = task.isRecurring ? getSelectedRecurrenceType(recurrenceTypeSpinner) : null;
+                    task.recurrenceType = englishRecurrenceType;
                     task.reminderOffset = reminderOffset;
                     task.reminderDays = getReminderDaysString(reminderDayCheckBoxes, recurringCheckBox.isChecked());
                     
                     // Recalculate priority if time was added/changed
-                    task.priority = calculateNewTaskPriority(selectedDueTime, selectedDayOfWeek);
+                    task.priority = calculateNewTaskPriority(selectedDueTime, englishDayOfWeek);
                     Log.d("MyToDo", "showTaskDialog: Updated priority for existing task: " + task.description + " -> priority: " + task.priority);
                     Log.d("MyToDo", "showTaskDialog: Set reminder offset to: " + reminderOffset + " for task: " + task.description);
                     if (reminderOffset != null && reminderOffset >= 0) {
@@ -1283,6 +1345,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("MyToDo", "showTaskDialog: No reminder scheduled for existing task (offset: " + reminderOffset + ")");
                     }
                     Log.d("MyToDo", "showTaskDialog: About to call viewModel.update for existing task: " + task.description + ", id: " + task.id);
+                    Log.d("MyToDo", "showTaskDialog: Task details before update - dayOfWeek: " + task.dayOfWeek + ", description: " + task.description);
                     viewModel.update(task);
                     Log.d("MyToDo", "showTaskDialog: viewModel.update called for existing task: " + task.description + ", id: " + task.id);
                     
@@ -1482,12 +1545,14 @@ public class MainActivity extends AppCompatActivity {
 
     private String mapDayOfWeekToCurrentLanguage(String storedDayOfWeek, String[] currentDaysOfWeek) {
         try {
+            Log.d("MyToDo", "mapDayOfWeekToCurrentLanguage: Input - storedDayOfWeek: '" + storedDayOfWeek + "', currentDaysOfWeek: " + java.util.Arrays.toString(currentDaysOfWeek));
             if (storedDayOfWeek == null) return null;
             if (currentDaysOfWeek == null || currentDaysOfWeek.length < 3) {
                 Log.e("MyToDo", "mapDayOfWeekToCurrentLanguage: currentDaysOfWeek array is invalid");
                 return storedDayOfWeek;
             }
             
+            // Handle special categories
             if ("None".equals(storedDayOfWeek) || "ללא".equals(storedDayOfWeek)) {
                 return currentDaysOfWeek[0];
             }
@@ -1498,7 +1563,21 @@ public class MainActivity extends AppCompatActivity {
                 return currentDaysOfWeek[2];
             }
             
-            // Handle Hebrew day names
+            // Handle English day names (stored in database)
+            String[] englishDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
+            int englishIndex = -1;
+            for (int i = 0; i < englishDays.length; i++) {
+                if (englishDays[i].equals(storedDayOfWeek)) {
+                    englishIndex = i;
+                    break;
+                }
+            }
+            if (englishIndex >= 0 && englishIndex + 3 < currentDaysOfWeek.length) {
+                Log.d("MyToDo", "mapDayOfWeekToCurrentLanguage: Mapped English day '" + storedDayOfWeek + "' to index " + (englishIndex + 3) + " -> '" + currentDaysOfWeek[englishIndex + 3] + "'");
+                return currentDaysOfWeek[englishIndex + 3];
+            }
+            
+            // Handle Hebrew day names (legacy data)
             String[] hebrewDays = {"ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"};
             int hebrewIndex = -1;
             for (int i = 0; i < hebrewDays.length; i++) {
@@ -1508,8 +1587,11 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
             if (hebrewIndex >= 0 && hebrewIndex + 3 < currentDaysOfWeek.length) {
+                Log.d("MyToDo", "mapDayOfWeekToCurrentLanguage: Mapped Hebrew day '" + storedDayOfWeek + "' to index " + (hebrewIndex + 3) + " -> '" + currentDaysOfWeek[hebrewIndex + 3] + "'");
                 return currentDaysOfWeek[hebrewIndex + 3];
             }
+            
+            Log.w("MyToDo", "mapDayOfWeekToCurrentLanguage: Could not map day '" + storedDayOfWeek + "' - returning as-is");
             return storedDayOfWeek;
         } catch (Exception e) {
             Log.e("MyToDo", "mapDayOfWeekToCurrentLanguage: Error mapping day of week", e);
@@ -2360,9 +2442,28 @@ public class MainActivity extends AppCompatActivity {
         super.onNewIntent(intent);
         Log.d("MyToDo", "onNewIntent: Current activity intent action: " + (getIntent() != null ? getIntent().getAction() : "null"));
         Log.d("MyToDo", "onNewIntent: isProcessingEditFromReminder flag: " + isProcessingEditFromReminder);
+        Log.d("MyToDo", "onNewIntent: New intent: " + intent);
+        if (intent != null) {
+            Log.d("MyToDo", "onNewIntent: New intent action: " + intent.getAction());
+            Log.d("MyToDo", "onNewIntent: New intent extras: " + intent.getExtras());
+            Log.d("MyToDo", "onNewIntent: New intent flags: " + intent.getFlags());
+            Log.d("MyToDo", "onNewIntent: New intent component: " + intent.getComponent());
+        }
         
+        // Handle add task from widget in onNewIntent
+        if (intent != null && intent.getBooleanExtra("open_add_task", false)) {
+            String presetDay = intent.getStringExtra("preset_day");
+            Log.d("MyToDo", "onNewIntent: Opening add task dialog from widget with preset day: " + presetDay);
+            Log.d("MyToDo", "onNewIntent: Intent extras: " + intent.getExtras());
+            setIntent(intent); // Update the current intent
+            // Schedule to open add task dialog after UI is ready
+            new android.os.Handler(android.os.Looper.getMainLooper()).postDelayed(() -> {
+                Log.d("MyToDo", "onNewIntent: Handler executing - about to call showTaskDialogWithPreset");
+                showTaskDialogWithPreset(presetDay);
+            }, 500);
+        }
         // Handle reminder intents when app is in background
-        if (intent != null && "EDIT_TASK_FROM_REMINDER".equals(intent.getAction())) {
+        else if (intent != null && "EDIT_TASK_FROM_REMINDER".equals(intent.getAction())) {
             Log.d("MyToDo", "onNewIntent: Processing EDIT_TASK_FROM_REMINDER intent");
             setIntent(intent); // Update the current intent
             handleEditTaskFromReminder(intent);
@@ -2440,6 +2541,15 @@ public class MainActivity extends AppCompatActivity {
                 unregisterReceiver(languageChangeReceiver);
             } catch (Exception e) {
                 Log.e("MyToDo", "Error unregistering language change receiver", e);
+            }
+        }
+        
+        // Unregister the task refresh receiver
+        if (taskRefreshReceiver != null) {
+            try {
+                unregisterReceiver(taskRefreshReceiver);
+            } catch (Exception e) {
+                Log.e("MyToDo", "Error unregistering task refresh receiver", e);
             }
         }
         
@@ -2652,6 +2762,23 @@ public class MainActivity extends AppCompatActivity {
         
         String result = sb.toString();
         return result.isEmpty() ? null : result;
+    }
+    
+    private void showTaskDialogWithPreset(String presetDay) {
+        Log.d("MyToDo", "showTaskDialogWithPreset: Opening task dialog with preset day: " + presetDay);
+        
+        try {
+            // Set the preset day and call showTaskDialog with null (like app plus button)
+            selectedDayOfWeek = presetDay;
+            Log.d("MyToDo", "showTaskDialogWithPreset: Set selectedDayOfWeek to: " + presetDay);
+            
+            // Show the dialog with null (new task) - same as app plus button
+            Log.d("MyToDo", "showTaskDialogWithPreset: About to call showTaskDialog with null");
+            showTaskDialog(null);
+            Log.d("MyToDo", "showTaskDialogWithPreset: showTaskDialog call completed");
+        } catch (Exception e) {
+            Log.e("MyToDo", "showTaskDialogWithPreset: Error opening task dialog", e);
+        }
     }
 
 

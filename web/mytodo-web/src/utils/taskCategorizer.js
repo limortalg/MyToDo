@@ -19,46 +19,26 @@ export class TaskCategorizer {
     return timeValue; // Already in milliseconds since midnight
   }
 
-  // Map day of week to current language (matches Android logic)
+  // Map English day name to current language for display (simplified for English-only storage)
   mapDayOfWeekToCurrentLanguage(dayOfWeek, daysOfWeek) {
-    // Handle special categories first - support both English and Hebrew values
-    if (dayOfWeek === 'Waiting' || dayOfWeek === 'בהמתנה') {
+    // All database values are now stored in English, so we just need to map to display language
+    const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    
+    // Handle special categories first
+    if (dayOfWeek === 'Waiting') {
       return this.t('Waiting');
     }
-    if (dayOfWeek === 'Immediate' || dayOfWeek === 'מיידי') {
+    if (dayOfWeek === 'Immediate') {
       return this.t('Immediate');
     }
-    if (dayOfWeek === 'Soon' || dayOfWeek === 'בקרוב') {
+    if (dayOfWeek === 'Soon') {
       return this.t('Soon');
     }
     
-    // Map day names between languages
-    const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-    const hebrewDays = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
-    
-    // Check if it's a Hebrew day name and map to English
-    const hebrewIndex = hebrewDays.indexOf(dayOfWeek);
-    if (hebrewIndex >= 0) {
-      return englishDays[hebrewIndex];
-    }
-    
-    // Find the index of the stored day in English
-    let englishIndex = -1;
-    for (let i = 0; i < englishDays.length; i++) {
-      if (englishDays[i] === dayOfWeek) {
-        englishIndex = i;
-        break;
-      }
-    }
-    
-    // If found in English, map to current language
+    // Find the index of the stored English day name
+    const englishIndex = englishDays.indexOf(dayOfWeek);
     if (englishIndex >= 0) {
       return daysOfWeek[englishIndex + 3]; // Indices 3-9 in daysOfWeek array
-    }
-    
-    // If found in Hebrew, map to current language
-    if (hebrewIndex >= 0) {
-      return daysOfWeek[hebrewIndex + 3]; // Indices 3-9 in daysOfWeek array
     }
     
     // If not found, return the original (fallback)
@@ -81,9 +61,8 @@ export class TaskCategorizer {
                    completedCategory, noneOption, todayMillis, nextWeekMillis, dayIndexToTaskIndex) {
     
 
-    // Check if this is a daily recurring task
-    const isDailyRecurring = task.isRecurring && 
-      (task.recurrenceType === 'Daily' || task.recurrenceType === 'יומי');
+    // Check if this is a daily recurring task (now only English values in database)
+    const isDailyRecurring = task.isRecurring && task.recurrenceType === 'Daily';
 
     let category = waitingCategory; // Default fallback category
     
@@ -257,9 +236,8 @@ export class TaskCategorizer {
         return;
       }
 
-      // Check if this is a daily recurring task
-      const isDailyRecurring = isRecurring && 
-        (task.recurrenceType === 'Daily' || task.recurrenceType === 'יומי');
+      // Check if this is a daily recurring task (now only English values in database)
+      const isDailyRecurring = isRecurring && task.recurrenceType === 'Daily';
 
       if (isDailyRecurring) {
         // Add one copy to each day category

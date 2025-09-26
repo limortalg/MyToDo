@@ -543,11 +543,8 @@ public class TaskViewModel extends AndroidViewModel {
             List<List<Task>> dayTasks, String[] daysOfWeek, int[] dayIndices, String immediateOption, String soonOption, 
             String waitingCategory, String completedCategory, String noneOption, long todayMillis, long nextWeekMillis, String query, boolean includeCompletedTasks) {
 
-        // Check if this is a daily recurring task
-        String[] recurrenceTypes = getApplication().getResources().getStringArray(R.array.recurrence_types);
-        String dailyRecurrenceType = recurrenceTypes[0]; // "Daily" or "יומי"
-        boolean isDailyRecurring = task.isRecurring && (dailyRecurrenceType.equals(task.recurrenceType) || 
-                "Daily".equals(task.recurrenceType) || "יומי".equals(task.recurrenceType));
+        // Check if this is a daily recurring task (now only English values in database)
+        boolean isDailyRecurring = task.isRecurring && TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
         Log.d("MyToDo", "Processing single task: " + task.description + ", isRecurring: " + task.isRecurring + 
                 ", recurrenceType: " + task.recurrenceType + ", isDailyRecurring: " + isDailyRecurring);
 
@@ -578,11 +575,11 @@ public class TaskViewModel extends AndroidViewModel {
             Log.w("MyToDo", "processSingleTask: WARNING - Completed task " + task.description + " (id: " + task.id + ") missing completion date, will be categorized by day instead");
             // Fall through to normal categorization
         } else if (task.dayOfWeek != null) {
-            // Always map dayOfWeek to current language first
+            // Task dayOfWeek is now always stored in English, map to current language for display
             String mappedDayOfWeek = mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
             Log.d("MyToDo", "Task dayOfWeek: " + task.dayOfWeek + " mapped to: " + mappedDayOfWeek);
             
-            if (mappedDayOfWeek.equals(noneOption)) {
+            if (TaskConstants.DAY_NONE.equals(task.dayOfWeek)) {
                 // Task has no specific day, check due date or assign to Waiting
                 if (task.dueDate != null) {
                     if (task.dueDate < todayMillis) {
@@ -610,11 +607,9 @@ public class TaskViewModel extends AndroidViewModel {
                 } else {
                     category = waitingCategory;
                 }
-            } else if (mappedDayOfWeek.equals(noneOption)) {
-                category = waitingCategory;
-            } else if (mappedDayOfWeek.equals(immediateOption)) {
+            } else if (TaskConstants.DAY_IMMEDIATE.equals(task.dayOfWeek)) {
                 category = immediateOption;
-            } else if (mappedDayOfWeek.equals(soonOption)) {
+            } else if (TaskConstants.DAY_SOON.equals(task.dayOfWeek)) {
                 category = soonOption;
             } else {
                 // Task has a specific day of the week
@@ -709,52 +704,29 @@ public class TaskViewModel extends AndroidViewModel {
     }
     
     private String mapDayOfWeekToCurrentLanguage(String storedDayOfWeek, String[] currentDaysOfWeek) {
-        // Map day names between languages
-        // English: Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday
-        // Hebrew: ראשון, שני, שלישי, רביעי, חמישי, שישי, שבת
-        
+        // All database values are now stored in English, so we just need to map to display language
         // Handle special categories first
-        if ("None".equals(storedDayOfWeek) || "ללא".equals(storedDayOfWeek)) {
+        if (TaskConstants.DAY_NONE.equals(storedDayOfWeek)) {
             return currentDaysOfWeek[0]; // "None" or "ללא"
         }
-        if ("Immediate".equals(storedDayOfWeek) || "מיידי".equals(storedDayOfWeek)) {
+        if (TaskConstants.DAY_IMMEDIATE.equals(storedDayOfWeek)) {
             return currentDaysOfWeek[1]; // "Immediate" or "מיידי"
         }
-        if ("Soon".equals(storedDayOfWeek) || "בקרוב".equals(storedDayOfWeek)) {
+        if (TaskConstants.DAY_SOON.equals(storedDayOfWeek)) {
             return currentDaysOfWeek[2]; // "Soon" or "בקרוב"
         }
         
-        String[] englishDays = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
-        String[] hebrewDays = {"ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"};
+        // Map English day names to current language
+        String[] englishDays = {TaskConstants.DAY_SUNDAY, TaskConstants.DAY_MONDAY, TaskConstants.DAY_TUESDAY, 
+                               TaskConstants.DAY_WEDNESDAY, TaskConstants.DAY_THURSDAY, TaskConstants.DAY_FRIDAY, TaskConstants.DAY_SATURDAY};
         
-        // Find the index of the stored day in English
-        int englishIndex = -1;
+        // Find the English day and map to current language
         for (int i = 0; i < englishDays.length; i++) {
             if (englishDays[i].equals(storedDayOfWeek)) {
-                englishIndex = i;
-                break;
+                if (i + 3 < currentDaysOfWeek.length) {
+                    return currentDaysOfWeek[i + 3];
+                }
             }
-        }
-        
-        // Find the index of the stored day in Hebrew
-        int hebrewIndex = -1;
-        for (int i = 0; i < hebrewDays.length; i++) {
-            if (hebrewDays[i].equals(storedDayOfWeek)) {
-                hebrewIndex = i;
-                break;
-            }
-        }
-        
-        // If found in English, map to current language
-        if (englishIndex >= 0) {
-            // Map English index to current language (indices 3-9 in daysOfWeek array)
-            return currentDaysOfWeek[englishIndex + 3];
-        }
-        
-        // If found in Hebrew, map to current language
-        if (hebrewIndex >= 0) {
-            // Map Hebrew index to current language (indices 3-9 in daysOfWeek array)
-            return currentDaysOfWeek[hebrewIndex + 3];
         }
         
         // If not found, return the original (fallback)

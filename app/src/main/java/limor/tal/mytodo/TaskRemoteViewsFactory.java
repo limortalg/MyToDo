@@ -1,5 +1,6 @@
 package limor.tal.mytodo;
 
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -142,6 +143,7 @@ public class TaskRemoteViewsFactory implements RemoteViewsService.RemoteViewsFac
         Log.d(TAG, "createTaskView: Creating view for task: " + task.description);
         
         RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.widget_task_item);
+        Log.d(TAG, "createTaskView: Created RemoteViews with layout: widget_task_item");
         
         // Set task description with priority indicator
         String prioritySymbol = "";
@@ -153,62 +155,79 @@ public class TaskRemoteViewsFactory implements RemoteViewsService.RemoteViewsFac
         }
         
         String displayText = prioritySymbol + task.description;
-        views.setTextViewText(R.id.widget_task_item, displayText);
+        views.setTextViewText(R.id.widget_task_text, displayText);
         Log.d(TAG, "createTaskView: Set task text: " + displayText);
         
-        // Set click intent for task completion
+        // Set ImageView to show unchecked state (since completed tasks are not shown in widget)
+        // This avoids checkbox state caching issues entirely
+        try {
+            views.setImageViewResource(R.id.widget_task_checkbox, R.drawable.ic_checkbox_unchecked);
+            Log.d(TAG, "createTaskView: Set ImageView to unchecked state for task: " + task.description);
+        } catch (Exception e) {
+            Log.e(TAG, "createTaskView: Error setting ImageView resource", e);
+        }
+        
+        Log.d(TAG, "createTaskView: About to set click intent for task: " + task.description + " (ID: " + task.id + ")");
+        
+        // Set click intent for task completion using fill-in intent (template approach)
+        // Individual RemoteViews items in ListView cannot use setOnClickPendingIntent directly
         Intent completeIntent = new Intent();
-        completeIntent.setAction(SimpleTaskWidgetProvider.ACTION_COMPLETE_TASK);
         completeIntent.putExtra("task_id", (int) task.id);
+        completeIntent.putExtra("debug_source", "TaskRemoteViewsFactory");
+        completeIntent.putExtra("debug_timestamp", System.currentTimeMillis());
+        Log.d(TAG, "createTaskView: Creating fill-in intent with task_id: " + task.id + ", intent: " + completeIntent);
+        
+        // Set click intent on both LinearLayout and ImageView
         views.setOnClickFillInIntent(R.id.widget_task_item, completeIntent);
-        Log.d(TAG, "createTaskView: Set click intent for task ID: " + task.id);
+        views.setOnClickFillInIntent(R.id.widget_task_checkbox, completeIntent);
+        Log.d(TAG, "createTaskView: Successfully set fill-in intent for task ID: " + task.id + " on both LinearLayout and ImageView");
+        Log.d(TAG, "createTaskView: Fill-in intent details - extras: " + completeIntent.getExtras());
         
         Log.d(TAG, "createTaskView: Successfully created simple view for task: " + task.description);
+        Log.d(TAG, "createTaskView: Returning RemoteViews for task: " + task.description + " (ID: " + task.id + ")");
+        
         return views;
     }
 
     private boolean isTaskForToday(Context context, Task task) {
         try {
-            // Get current day name in app's language
-            String[] daysOfWeek = context.getResources().getStringArray(R.array.days_of_week);
+            // Get current day in English (always stored in English in database)
             java.util.Calendar today = java.util.Calendar.getInstance();
-            int todayDayOfWeek = today.get(java.util.Calendar.DAY_OF_WEEK);
+            String todayEnglishDay = TaskConstants.getEnglishDayName(today.get(java.util.Calendar.DAY_OF_WEEK));
             
-            // Map Calendar.DAY_OF_WEEK to days_of_week array indices
-            int dayIndex;
-            switch (todayDayOfWeek) {
-                case java.util.Calendar.SUNDAY: dayIndex = 3; break;
-                case java.util.Calendar.MONDAY: dayIndex = 4; break;
-                case java.util.Calendar.TUESDAY: dayIndex = 5; break;
-                case java.util.Calendar.WEDNESDAY: dayIndex = 6; break;
-                case java.util.Calendar.THURSDAY: dayIndex = 7; break;
-                case java.util.Calendar.FRIDAY: dayIndex = 8; break;
-                case java.util.Calendar.SATURDAY: dayIndex = 9; break;
-                default: dayIndex = 8; break;
+            Log.d(TAG, "isTaskForToday: Today English day: " + todayEnglishDay);
+            
+            // 1. Check for tasks with a specific day of the week (now always in English)
+            if (task.dayOfWeek != null && !task.dayOfWeek.isEmpty()) {
+                Log.d(TAG, "isTaskForToday: Task dayOfWeek: " + task.dayOfWeek + ", Today: " + todayEnglishDay);
+                if (task.dayOfWeek.equals(todayEnglishDay)) {
+                    Log.d(TAG, "isTaskForToday: Task matches current day of week: " + task.description);
+                    return true;
+                }
             }
             
-            String todayDayName = daysOfWeek[dayIndex];
-            
-            // Check if task is for today
-            if (task.dayOfWeek != null && task.dayOfWeek.equals(todayDayName)) {
+            // 2. Check for "Immediate" tasks (overdue tasks) - now always in English
+            if (task.dayOfWeek != null && task.dayOfWeek.equals(TaskConstants.DAY_IMMEDIATE)) {
+                Log.d(TAG, "isTaskForToday: Task is 'Immediate': " + task.description);
                 return true;
             }
             
-            // Check if task is immediate/overdue
-            if (task.dayOfWeek != null && (task.dayOfWeek.equals("מיידי") || task.dayOfWeek.equals("Immediate"))) {
-                return true;
-            }
-            
-            // Check if task has due date for today
+            // 3. Check if task has due date for today
             if (task.dueDate != null) {
                 java.util.Calendar taskDate = java.util.Calendar.getInstance();
                 taskDate.setTimeInMillis(task.dueDate);
                 
                 java.util.Calendar todayCal = java.util.Calendar.getInstance();
-                return taskDate.get(java.util.Calendar.YEAR) == todayCal.get(java.util.Calendar.YEAR) &&
-                       taskDate.get(java.util.Calendar.DAY_OF_YEAR) == todayCal.get(java.util.Calendar.DAY_OF_YEAR);
+                boolean isSameDay = taskDate.get(java.util.Calendar.YEAR) == todayCal.get(java.util.Calendar.YEAR) &&
+                                   taskDate.get(java.util.Calendar.DAY_OF_YEAR) == todayCal.get(java.util.Calendar.DAY_OF_YEAR);
+                
+                if (isSameDay) {
+                    Log.d(TAG, "isTaskForToday: Task matches current due date: " + task.description);
+                    return true;
+                }
             }
             
+            Log.d(TAG, "isTaskForToday: Task does not match today - returning false for: " + task.description);
             return false;
             
         } catch (Exception e) {

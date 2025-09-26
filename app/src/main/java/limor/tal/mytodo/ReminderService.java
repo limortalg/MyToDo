@@ -52,14 +52,18 @@ public class ReminderService extends Service {
             String action = intent.getAction();
             int taskId = intent.getIntExtra("task_id", -1);
             
+            Log.d(TAG, "Received action: " + action + " for task ID: " + taskId);
             switch (action) {
                 case "SNOOZE":
+                    Log.d(TAG, "Handling snooze action");
                     handleSnooze(taskId);
                     break;
                 case "DELETE":
+                    Log.d(TAG, "Handling delete action");
                     handleDelete(taskId);
                     break;
                 case "STOP_REMINDER":
+                    Log.d(TAG, "Handling stop reminder action");
                     handleStopReminder(taskId);
                     break;
                 default:
