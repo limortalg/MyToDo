@@ -150,9 +150,28 @@ public class SettingsActivity extends AppCompatActivity implements FirebaseAuthS
                 mediaPlayer.prepare();
                 mediaPlayer.start();
                 
-                // Stop after 3 seconds
+                // Stop after 3 seconds using a handler to ensure it stops
+                android.os.Handler handler = new android.os.Handler();
+                handler.postDelayed(() -> {
+                    try {
+                        if (mediaPlayer.isPlaying()) {
+                            mediaPlayer.stop();
+                        }
+                        mediaPlayer.release();
+                        Log.d(TAG, "Test sound stopped after 6 seconds");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error stopping test sound", e);
+                    }
+                }, 6000); // 6 seconds
+                
+                // Also set completion listener as backup
                 mediaPlayer.setOnCompletionListener(mp -> {
-                    mp.release();
+                    try {
+                        mp.release();
+                        Log.d(TAG, "Test sound completed naturally");
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error releasing MediaPlayer on completion", e);
+                    }
                 });
                 
                 Toast.makeText(this, getString(R.string.playing_test_sound), Toast.LENGTH_SHORT).show();
