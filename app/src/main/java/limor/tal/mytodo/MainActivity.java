@@ -699,7 +699,7 @@ public class MainActivity extends AppCompatActivity {
                     setLocale(newLanguage);
                     
                     // Refresh widgets to show new language (only if widgets are installed)
-                    if (WidgetUpdateHelper.hasWidgets(con   text)) {
+                    if (WidgetUpdateHelper.hasWidgets(context)) {
                         WidgetUpdateHelper.refreshAllWidgets(context);
                     }
                     

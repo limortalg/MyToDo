@@ -68,14 +68,24 @@
     </LinearLayout>
 
     <!-- Tasks list -->
-    <LinearLayout
+    <ListView
         android:id="@+id/widget_tasks_container"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:orientation="vertical"
         android:clickable="false"
         android:focusable="false" />
 
+    <!-- Empty view for when no tasks -->
+    <TextView
+        android:id="@+id/widget_empty_view"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/no_tasks"
+        android:textColor="@android:color/white"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:padding="16dp"
+        android:visibility="gone" />
 
 </LinearLayout>
