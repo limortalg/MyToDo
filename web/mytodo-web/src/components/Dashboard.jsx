@@ -21,6 +21,7 @@ import {
 import { signOut } from 'firebase/auth';
 import { auth } from '../firebase';
 import { TaskService } from '../services/TaskService';
+import { familySyncService } from '../services/FamilySyncService';
 import { Task } from '../models/Task';
 import CategorizedTaskList from './CategorizedTaskList';
 import TaskDialog from './TaskDialog';
@@ -35,10 +36,30 @@ const Dashboard = ({ taskService, user }) => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
+  const [fixingTasks, setFixingTasks] = useState(false);
 
   useEffect(() => {
     loadTasks();
   }, []);
+
+  // Subscribe to FamilySync changes for exported tasks
+  useEffect(() => {
+    if (tasks.length > 0) {
+      console.log('Setting up FamilySync subscriptions for', tasks.length, 'tasks');
+      
+      // Subscribe to changes for each exported task
+      tasks.forEach(task => {
+        if (task.sourceApp === 'familysync' && task.sourceTaskId) {
+          console.log('Subscribing to FamilySync changes for task:', task.description, 'sourceTaskId:', task.sourceTaskId);
+          familySyncService.subscribeToFamilySyncChanges(task.id, (changeData) => {
+            console.log('FamilySync change detected for task:', task.description, changeData);
+            // Reload tasks to get the updated completion status
+            loadTasks();
+          });
+        }
+      });
+    }
+  }, [tasks]);
 
   const loadTasks = async () => {
     try {
@@ -119,9 +140,15 @@ const Dashboard = ({ taskService, user }) => {
 
   const handleToggleCompletion = async (taskId, isCompleted) => {
     try {
-      await taskService.toggleTaskCompletion(taskId, isCompleted);
-      showSnackbar(`Task ${isCompleted ? 'completed' : 'uncompleted'}`, 'success');
-      loadTasks();
+      // Use FamilySync service for enhanced completion with sync
+      const result = await familySyncService.toggleTaskCompletionWithSync(taskId, isCompleted);
+      
+      if (result.success) {
+        showSnackbar(`Task ${isCompleted ? 'completed' : 'uncompleted'}`, 'success');
+        loadTasks();
+      } else {
+        throw new Error(result.error || 'Failed to update task');
+      }
     } catch (error) {
       console.error('Error toggling task completion:', error);
       showSnackbar('Failed to update task', 'error');

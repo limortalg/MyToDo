@@ -16,11 +16,18 @@ export class Task {
     this.manualPosition = data.manualPosition || null;
     this.createdAt = data.createdAt || Date.now();
     this.updatedAt = data.updatedAt || Date.now();
+    
+    // FamilySync integration fields
+    this.sourceApp = data.sourceApp || null;
+    this.sourceTaskId = data.sourceTaskId || null;
+    this.sourceGroupId = data.sourceGroupId || null;
+    this.familySyncAssigneeId = data.familySyncAssigneeId || null;
+    this.familySyncCreatorId = data.familySyncCreatorId || null;
   }
 
   // Convert to Firestore format
   toFirestore() {
-    return {
+    const firestoreData = {
       description: this.description,
       dueDate: this.dueDate,
       dueTime: this.dueTime,
@@ -36,6 +43,15 @@ export class Task {
       createdAt: this.createdAt,
       updatedAt: this.updatedAt
     };
+
+    // Include FamilySync fields if they exist
+    if (this.sourceApp) firestoreData.sourceApp = this.sourceApp;
+    if (this.sourceTaskId) firestoreData.sourceTaskId = this.sourceTaskId;
+    if (this.sourceGroupId) firestoreData.sourceGroupId = this.sourceGroupId;
+    if (this.familySyncAssigneeId) firestoreData.familySyncAssigneeId = this.familySyncAssigneeId;
+    if (this.familySyncCreatorId) firestoreData.familySyncCreatorId = this.familySyncCreatorId;
+
+    return firestoreData;
   }
 
   // Create from Firestore data
@@ -94,5 +110,17 @@ export class Task {
     const today = new Date();
     const dueDate = new Date(this.dueDate);
     return today.toDateString() === dueDate.toDateString();
+  }
+
+  // Check if task is imported from FamilySync
+  isFromFamilySync() {
+    const isFromFS = this.sourceApp === 'familysync' && this.sourceTaskId;
+    console.log('Task.isFromFamilySync:', {
+      taskDescription: this.description,
+      sourceApp: this.sourceApp,
+      sourceTaskId: this.sourceTaskId,
+      isFromFamilySync: isFromFS
+    });
+    return isFromFS;
   }
 }

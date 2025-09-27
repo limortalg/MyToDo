@@ -5,7 +5,7 @@ A responsive web interface for the MyToDo Android app, allowing users to manage 
 ## Features
 
 - 🔐 **Google Authentication** - Sign in with your Google account
-- 📱 **Cross-Platform Sync** - Tasks sync automatically with the Android app
+- 📱 **Cross-Platform Sync** - Tasks sync automatically with the Android app and widget
 - ✅ **Task Management** - Create, edit, complete, and delete tasks
 - 📅 **Date & Time** - Set due dates and times for tasks
 - 🔄 **Recurring Tasks** - Support for daily, weekly, monthly, and yearly tasks
@@ -13,6 +13,7 @@ A responsive web interface for the MyToDo Android app, allowing users to manage 
 - 🏷️ **Priority Levels** - High, Medium, Low, and Normal priority
 - 🔍 **Search & Filter** - Find tasks quickly with search and filtering
 - 📱 **Responsive Design** - Works on desktop, tablet, and mobile
+- 👥 **FamilySync Integration** - Import and sync tasks from FamilySync with bidirectional completion sync
 
 ## Setup Instructions
 
@@ -63,6 +64,32 @@ npm run build
 6. **Delete Tasks**: Click the delete icon to remove tasks
 7. **Search**: Use the search bar to find specific tasks
 8. **Filter**: Filter by priority or completion status
+
+## 👥 FamilySync Integration
+
+MyToDo web app integrates seamlessly with FamilySync for task import and synchronization:
+
+### Imported Tasks
+- **FamilySync Indicator**: Tasks imported from FamilySync show a purple "FamilySync" chip
+- **Source Tracking**: Clear visual indication of task origin
+- **Automatic Sync**: Task completion automatically syncs back to FamilySync
+
+### How It Works
+1. **Export from FamilySync**: Users export tasks from FamilySync using the 📤 button
+2. **Import to MyToDo**: Tasks appear in MyToDo web app with FamilySync indicator
+3. **Bidirectional Sync**: Completing tasks in MyToDo automatically updates FamilySync
+4. **Real-time Updates**: Changes sync across all platforms instantly
+
+### Visual Indicators
+- **Purple "FamilySync" Chip**: Shows on imported tasks
+- **FamilySync Icon**: 👥 icon in the chip for easy identification
+- **Hover Tooltip**: "Imported from FamilySync" tooltip on hover
+
+### Technical Details
+- **Firestore Collections**: Uses `mytodo_tasks` and `task_sync_logs` collections
+- **Source Fields**: Tracks `sourceApp`, `sourceTaskId`, `sourceGroupId`
+- **Sync Service**: `FamilySyncService` handles bidirectional synchronization
+- **Error Handling**: Graceful handling of sync failures with user feedback
 
 ## Technical Details
 

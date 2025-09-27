@@ -17,12 +17,14 @@ import {
   Collapse,
   Accordion,
   AccordionSummary,
-  AccordionDetails
+  AccordionDetails,
+  Tooltip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import FamilyRestroom from '@mui/icons-material/FamilyRestroom';
 import { format } from 'date-fns';
 import { TaskCategorizer } from '../utils/taskCategorizer';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -376,6 +378,53 @@ const CategorizedTaskList = ({
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                 🔔 {getReminderText(task)}
                               </Typography>
+                            )}
+
+                            {/* FamilySync source indicator */}
+                            {(() => {
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - Task being rendered:', task.description);
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - sourceApp:', task.sourceApp);
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - sourceTaskId:', task.sourceTaskId);
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - task object type:', typeof task);
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - task constructor:', task.constructor.name);
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - has isFromFamilySync method:', typeof task.isFromFamilySync);
+                              
+                              // Try to call the method if it exists
+                              let isFromFS = false;
+                              if (task.isFromFamilySync && typeof task.isFromFamilySync === 'function') {
+                                isFromFS = task.isFromFamilySync();
+                              } else {
+                                // Fallback: manual check
+                                isFromFS = task.sourceApp === 'familysync' && task.sourceTaskId;
+                                console.log('🔥 CATEGORIZED TASKLIST DEBUG - Using fallback check:', isFromFS);
+                              }
+                              
+                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - isFromFamilySync result:', isFromFS);
+                              
+                              if (isFromFS) {
+                                console.log('🎉 FAMILYSYNC TASK DETECTED IN CATEGORIZED LIST:', task.description);
+                              }
+                              
+                              return isFromFS;
+                            })() && (
+                              <Box sx={{ mt: 1 }}>
+                                <Tooltip title="Imported from FamilySync">
+                                  <Chip 
+                                    icon={<FamilyRestroom />}
+                                    label="FamilySync" 
+                                    variant="outlined" 
+                                    size="small" 
+                                    color="secondary"
+                                    sx={{
+                                      backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                                      borderColor: 'rgba(156, 39, 176, 0.3)',
+                                      '& .MuiChip-icon': {
+                                        color: '#9c27b0'
+                                      }
+                                    }}
+                                  />
+                                </Tooltip>
+                              </Box>
                             )}
                           </Box>
                           

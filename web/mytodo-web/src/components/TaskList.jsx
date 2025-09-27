@@ -15,15 +15,18 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  Grid
+  Grid,
+  Tooltip
 } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
   Search as SearchIcon,
-  FilterList as FilterIcon
+  FilterList as FilterIcon,
+  FamilyRestroom as FamilySyncIcon
 } from '@mui/icons-material';
 import { format } from 'date-fns';
+import { familySyncService } from '../services/FamilySyncService';
 
 const TaskList = ({ 
   tasks, 
@@ -162,6 +165,39 @@ const TaskList = ({
                   
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 1 }}>
                     {/* Priority is calculated automatically by Android app */}
+                    
+                    {/* FamilySync source indicator */}
+                    {(() => {
+                      console.log('🔥 TASKLIST DEBUG - Task being rendered:', task.description);
+                      console.log('🔥 TASKLIST DEBUG - sourceApp:', task.sourceApp);
+                      console.log('🔥 TASKLIST DEBUG - sourceTaskId:', task.sourceTaskId);
+                      
+                      const isFromFS = task.isFromFamilySync();
+                      console.log('🔥 TASKLIST DEBUG - isFromFamilySync result:', isFromFS);
+                      
+                      if (isFromFS) {
+                        console.log('🎉 FAMILYSYNC TASK DETECTED:', task.description);
+                      }
+                      
+                      return isFromFS;
+                    })() && (
+                      <Tooltip title="Imported from FamilySync">
+                        <Chip 
+                          icon={<FamilySyncIcon />}
+                          label="FamilySync" 
+                          variant="outlined" 
+                          size="small" 
+                          color="secondary"
+                          sx={{ 
+                            backgroundColor: 'rgba(156, 39, 176, 0.1)',
+                            borderColor: 'rgba(156, 39, 176, 0.3)',
+                            '& .MuiChip-icon': {
+                              color: '#9c27b0'
+                            }
+                          }}
+                        />
+                      </Tooltip>
+                    )}
                     
                     {task.dayOfWeek && (
                       <Chip label={task.dayOfWeek} variant="outlined" size="small" />
