@@ -158,6 +158,19 @@ public class TaskRemoteViewsFactory implements RemoteViewsService.RemoteViewsFac
         views.setTextViewText(R.id.widget_task_text, displayText);
         Log.d(TAG, "createTaskView: Set task text: " + displayText);
         
+        // Show FamilySync indicator if task is imported from FamilySync
+        // Note: This will be enhanced when we add FamilySync fields to the Task class
+        // For now, we'll check if the task has a Firestore document ID as a placeholder
+        if (task.firestoreDocumentId != null) {
+            // This is a placeholder - the actual implementation will check FirestoreTask source fields
+            // TODO: Query Firestore to check if this task is imported from FamilySync
+            views.setViewVisibility(R.id.widget_family_sync_icon, android.view.View.GONE); // Hide for now
+            Log.d(TAG, "createTaskView: Task has Firestore ID but FamilySync check not implemented yet: " + task.description);
+        } else {
+            views.setViewVisibility(R.id.widget_family_sync_icon, android.view.View.GONE);
+            Log.d(TAG, "createTaskView: Task has no Firestore ID: " + task.description);
+        }
+        
         // Set ImageView to show unchecked state (since completed tasks are not shown in widget)
         // This avoids checkbox state caching issues entirely
         try {

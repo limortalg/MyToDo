@@ -50,6 +50,17 @@
                 android:textSize="12sp"
                 android:visibility="gone"
                 android:contentDescription="Reminder" />
+
+            <TextView
+                android:id="@+id/familySyncIcon"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:text="👥"
+                android:textSize="12sp"
+                android:visibility="gone"
+                android:contentDescription="Imported from FamilySync"
+                android:textColor="#9C27B0" />
         </LinearLayout>
     </LinearLayout>
 

@@ -23,6 +23,13 @@ public class FirestoreTask {
     public Long createdAt; // Timestamp when task was created
     public Long updatedAt; // Timestamp when task was last updated
     public String syncStatus; // "pending", "synced", "conflict"
+    
+    // FamilySync export tracking fields
+    public String sourceApp; // "familysync" if exported from FamilySync
+    public String sourceTaskId; // FamilySync task ID if exported
+    public String sourceGroupId; // FamilySync group ID if exported
+    public String familySyncAssigneeId; // FamilySync assignee ID
+    public String familySyncCreatorId; // FamilySync creator ID
 
     // Default constructor required for Firestore
     public FirestoreTask() {}
@@ -59,6 +66,14 @@ public class FirestoreTask {
         task.manualPosition = this.manualPosition;
         task.createdAt = this.createdAt;
         task.updatedAt = this.updatedAt;
+        
+        // Sync FamilySync fields
+        task.sourceApp = this.sourceApp;
+        task.sourceTaskId = this.sourceTaskId;
+        task.sourceGroupId = this.sourceGroupId;
+        task.familySyncAssigneeId = this.familySyncAssigneeId;
+        task.familySyncCreatorId = this.familySyncCreatorId;
+        
         return task;
     }
 
@@ -81,6 +96,14 @@ public class FirestoreTask {
         firestoreTask.createdAt = task.createdAt;
         firestoreTask.updatedAt = task.updatedAt;
         firestoreTask.syncStatus = "pending";
+        
+        // Sync FamilySync fields
+        firestoreTask.sourceApp = task.sourceApp;
+        firestoreTask.sourceTaskId = task.sourceTaskId;
+        firestoreTask.sourceGroupId = task.sourceGroupId;
+        firestoreTask.familySyncAssigneeId = task.familySyncAssigneeId;
+        firestoreTask.familySyncCreatorId = task.familySyncCreatorId;
+        
         return firestoreTask;
     }
 
@@ -104,6 +127,11 @@ public class FirestoreTask {
         map.put("createdAt", createdAt);
         map.put("updatedAt", updatedAt);
         map.put("syncStatus", syncStatus);
+        map.put("sourceApp", sourceApp);
+        map.put("sourceTaskId", sourceTaskId);
+        map.put("sourceGroupId", sourceGroupId);
+        map.put("familySyncAssigneeId", familySyncAssigneeId);
+        map.put("familySyncCreatorId", familySyncCreatorId);
         return map;
     }
 
@@ -115,6 +143,19 @@ public class FirestoreTask {
     // Check if task needs sync
     public boolean needsSync() {
         return "pending".equals(syncStatus);
+    }
+    
+    // Check if task is exported from FamilySync
+    public boolean isExportedFromFamilySync() {
+        return "familysync".equals(sourceApp) && sourceTaskId != null;
+    }
+    
+    // Get FamilySync source info for display
+    public String getFamilySyncSourceInfo() {
+        if (isExportedFromFamilySync()) {
+            return "FamilySync";
+        }
+        return null;
     }
 
     @Override

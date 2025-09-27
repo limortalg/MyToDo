@@ -21,12 +21,32 @@
         android:focusable="true"
         android:background="?android:attr/selectableItemBackground" />
 
-    <TextView
-        android:id="@+id/widget_task_text"
+    <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
         android:layout_weight="1"
-        android:textColor="@android:color/white"
-        android:textSize="14sp" />
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:id="@+id/widget_task_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:textColor="@android:color/white"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/widget_family_sync_icon"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="4dp"
+            android:text="👥"
+            android:textSize="12sp"
+            android:visibility="gone"
+            android:textColor="#FF9C27B0"
+            android:contentDescription="Imported from FamilySync" />
+
+    </LinearLayout>
 
 </LinearLayout>

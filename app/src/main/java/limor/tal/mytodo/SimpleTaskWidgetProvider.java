@@ -283,6 +283,29 @@ public class SimpleTaskWidgetProvider extends AppWidgetProvider {
                     taskDao.update(task);
                     Log.d(TAG, "completeTask: Task completed successfully: " + task.description);
                     
+                    // If task has Firestore document ID, sync with FamilySync
+                    if (task.firestoreDocumentId != null) {
+                        Log.d(TAG, "completeTask: Task has Firestore ID, syncing with FamilySync: " + task.firestoreDocumentId);
+                        try {
+                            FirestoreService firestoreService = new FirestoreService();
+                            firestoreService.updateTaskCompletionWithSync(task.firestoreDocumentId, true, new FirestoreService.FirestoreCallback() {
+                                @Override
+                                public void onSuccess(Object result) {
+                                    Log.d(TAG, "completeTask: FamilySync sync successful for task: " + task.description);
+                                }
+                                
+                                @Override
+                                public void onError(String error) {
+                                    Log.e(TAG, "completeTask: FamilySync sync failed for task: " + task.description + ", error: " + error);
+                                }
+                            });
+                        } catch (Exception e) {
+                            Log.e(TAG, "completeTask: Error syncing with FamilySync: " + e.getMessage(), e);
+                        }
+                    } else {
+                        Log.d(TAG, "completeTask: Task has no Firestore ID, skipping FamilySync sync: " + task.description);
+                    }
+                    
                     // Refresh all widgets on main thread
                     android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
                     mainHandler.post(() -> {

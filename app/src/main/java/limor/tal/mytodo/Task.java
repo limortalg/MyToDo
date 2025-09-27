@@ -23,6 +23,13 @@ public class Task {
     public String firestoreDocumentId; // Firestore document ID for cloud sync
     public Long createdAt; // Timestamp when task was created
     public Long updatedAt; // Timestamp when task was last updated
+    
+    // FamilySync integration fields
+    public String sourceApp; // "familysync" if imported from FamilySync
+    public String sourceTaskId; // Original FamilySync task ID
+    public String sourceGroupId; // FamilySync group ID
+    public String familySyncAssigneeId; // FamilySync assignee ID
+    public String familySyncCreatorId; // FamilySync creator ID
 
     public Task(String description, Long dueDate, String dayOfWeek, boolean isRecurring, String recurrenceType, boolean isCompleted, int priority) {
         this.description = description;
@@ -39,6 +46,13 @@ public class Task {
         this.manualPosition = null; // Automatic ordering by default
         this.createdAt = System.currentTimeMillis();
         this.updatedAt = System.currentTimeMillis();
+    }
+
+    /**
+     * Check if this task is imported from FamilySync
+     */
+    public boolean isExportedFromFamilySync() {
+        return "familysync".equals(sourceApp) && sourceTaskId != null;
     }
 
     @Override

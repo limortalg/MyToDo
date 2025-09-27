@@ -11,7 +11,7 @@ import androidx.sqlite.db.SupportSQLiteDatabase;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-@Database(entities = {Task.class}, version = 5, exportSchema = false)
+@Database(entities = {Task.class}, version = 6, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
     public abstract TaskDao taskDao();
 
@@ -51,13 +51,25 @@ public abstract class AppDatabase extends RoomDatabase {
         }
     };
 
+    // Migration from version 5 to 6: Add FamilySync integration fields
+    static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE tasks ADD COLUMN sourceApp TEXT");
+            database.execSQL("ALTER TABLE tasks ADD COLUMN sourceTaskId TEXT");
+            database.execSQL("ALTER TABLE tasks ADD COLUMN sourceGroupId TEXT");
+            database.execSQL("ALTER TABLE tasks ADD COLUMN familySyncAssigneeId TEXT");
+            database.execSQL("ALTER TABLE tasks ADD COLUMN familySyncCreatorId TEXT");
+        }
+    };
+
     public static AppDatabase getDatabase(final Context context) {
         if (INSTANCE == null) {
             synchronized (AppDatabase.class) {
                 if (INSTANCE == null) {
                     INSTANCE = Room.databaseBuilder(context.getApplicationContext(),
                                     AppDatabase.class, "task_database")
-                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                            .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                             .build();
                 }
             }

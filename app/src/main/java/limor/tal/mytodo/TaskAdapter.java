@@ -616,6 +616,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         RadioButton selectedRadioButton;
         TextView dueDateTextView;
         TextView reminderIcon;
+        TextView familySyncIcon;
         ImageView pinIcon;
 
         Task task;
@@ -626,6 +627,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             selectedRadioButton = itemView.findViewById(R.id.selectedRadioButton);
             dueDateTextView = itemView.findViewById(R.id.dueDateTextView);
             reminderIcon = itemView.findViewById(R.id.reminderIcon);
+            familySyncIcon = itemView.findViewById(R.id.familySyncIcon);
             pinIcon = itemView.findViewById(R.id.pinIcon);
 
             
@@ -784,6 +786,19 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 reminderIcon.setVisibility(View.VISIBLE);
             } else {
                 reminderIcon.setVisibility(View.GONE);
+            }
+            
+            // Show FamilySync icon if task is imported from FamilySync
+            Log.d("MyToDo", "TaskAdapter: Checking FamilySync status for task: " + task.description);
+            Log.d("MyToDo", "TaskAdapter: sourceApp: " + task.sourceApp + ", sourceTaskId: " + task.sourceTaskId);
+            Log.d("MyToDo", "TaskAdapter: isExportedFromFamilySync: " + task.isExportedFromFamilySync());
+            
+            if (task.isExportedFromFamilySync()) {
+                familySyncIcon.setVisibility(View.VISIBLE);
+                Log.d("MyToDo", "TaskAdapter: Showing FamilySync icon for task: " + task.description);
+            } else {
+                familySyncIcon.setVisibility(View.GONE);
+                Log.d("MyToDo", "TaskAdapter: Hiding FamilySync icon for task: " + task.description);
             }
             
             // Show pin icon if task was manually positioned (has manualPosition set)

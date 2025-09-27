@@ -26,6 +26,7 @@ public class FirestoreService {
     
     private FirebaseFirestore db;
     private FirebaseAuth auth;
+    private FamilySyncService familySyncService;
 
     public interface FirestoreCallback {
         void onSuccess(Object result);
@@ -40,6 +41,7 @@ public class FirestoreService {
     public FirestoreService() {
         this.db = FirebaseFirestore.getInstance();
         this.auth = FirebaseAuth.getInstance();
+        this.familySyncService = new FamilySyncService();
         
         // Disable offline persistence to ensure we always get fresh data from server
         FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
@@ -193,7 +195,14 @@ public class FirestoreService {
                                     FirestoreTask firestoreTask = document.toObject(FirestoreTask.class);
                                     if (firestoreTask != null) {
                                         firestoreTask.documentId = document.getId();
+                                        Log.d(TAG, "Loaded FirestoreTask: " + firestoreTask.description + 
+                                              ", sourceApp: " + firestoreTask.sourceApp + 
+                                              ", sourceTaskId: " + firestoreTask.sourceTaskId);
                                         limor.tal.mytodo.Task localTask = firestoreTask.toTask();
+                                        Log.d(TAG, "Converted to local Task: " + localTask.description + 
+                                              ", sourceApp: " + localTask.sourceApp + 
+                                              ", sourceTaskId: " + localTask.sourceTaskId +
+                                              ", isExportedFromFamilySync: " + localTask.isExportedFromFamilySync());
                                         tasks.add(localTask);
                                     }
                                 } catch (Exception e) {
@@ -253,5 +262,37 @@ public class FirestoreService {
     // Get current user ID
     public String getCurrentUserId() {
         return auth.getCurrentUser() != null ? auth.getCurrentUser().getUid() : null;
+    }
+    
+    // Update task completion with FamilySync sync
+    public void updateTaskCompletionWithSync(String documentId, boolean isCompleted, FirestoreCallback callback) {
+        familySyncService.toggleTaskCompletionWithSync(documentId, isCompleted, new FamilySyncService.FamilySyncCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                Log.d(TAG, "Task completion updated with FamilySync sync");
+                callback.onSuccess(result);
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "Error updating task completion with sync: " + error);
+                callback.onError(error);
+            }
+        });
+    }
+    
+    // Subscribe to FamilySync changes for a task
+    public void subscribeToFamilySyncChanges(String taskId, FirestoreCallback callback) {
+        familySyncService.subscribeToFamilySyncChanges(taskId, new FamilySyncService.FamilySyncCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                callback.onSuccess(result);
+            }
+            
+            @Override
+            public void onError(String error) {
+                callback.onError(error);
+            }
+        });
     }
 }

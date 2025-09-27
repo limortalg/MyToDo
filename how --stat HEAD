@@ -1,0 +1,22 @@
+[33mcommit 1ff97ef906b5e58562340dbf343119359f76e60b[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmaster[m[33m)[m
+Author: limortalg <limor.tal.g@gmail.com>
+Date:   Sat Sep 27 17:20:56 2025 +0300
+
+    Fix: Preserve task content when completing exported FamilySync tasks
+    
+    - Fixed FamilySyncService updateTask call that was losing task description and other fields
+    - Now preserves all existing task data when updating completion status
+    - Resolves issue where completed exported tasks appeared without content
+    - Added debug logging to track data preservation during updates
+
+ web/mytodo-web/.firebase/hosting.ZGlzdA.cache      |   6 [32m+[m[31m-[m
+ web/mytodo-web/README.md                           |  29 [32m++[m[31m-[m
+ web/mytodo-web/firestore.rules                     |  72 [32m++++++[m[31m-[m
+ web/mytodo-web/package.json                        |   2 [32m+[m[31m-[m
+ .../src/components/CategorizedTaskList.jsx         |  51 [32m++++[m[31m-[m
+ web/mytodo-web/src/components/Dashboard.jsx        |  33 [32m++[m[31m-[m
+ web/mytodo-web/src/components/TaskList.jsx         |  40 [32m+++[m[31m-[m
+ web/mytodo-web/src/models/Task.js                  |  30 [32m++[m[31m-[m
+ web/mytodo-web/src/services/FamilySyncService.js   | 232 [32m+++++++++++++++++++++[m
+ web/mytodo-web/src/services/TaskService.js         | 143 [32m++++++++++++[m[31m-[m
+ 10 files changed, 619 insertions(+), 19 deletions(-)
