@@ -69,7 +69,7 @@ const CategorizedTaskList = ({
   };
 
   const getReminderText = (task) => {
-    if (!task.reminderOffset || task.reminderOffset < 0 || task.isCompleted) {
+    if (task.reminderOffset === null || task.reminderOffset === undefined || task.reminderOffset < 0 || task.isCompleted) {
       return null;
     }
     

@@ -11,7 +11,7 @@ export class Task {
     this.isCompleted = data.isCompleted || false;
     this.priority = data.priority || 0;
     this.completionDate = data.completionDate || null;
-    this.reminderOffset = data.reminderOffset || null; // Minutes before due time
+    this.reminderOffset = data.reminderOffset !== undefined ? data.reminderOffset : null; // Minutes before due time
     this.reminderDays = data.reminderDays || null; // For daily recurring tasks
     this.manualPosition = data.manualPosition || null;
     this.createdAt = data.createdAt || Date.now();

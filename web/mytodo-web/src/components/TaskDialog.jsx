@@ -90,7 +90,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         isRecurring: task.isRecurring || false,
         recurrenceType: task.recurrenceType || '',
         priority: task.priority || 0,
-        reminderOffset: task.reminderOffset || null,
+        reminderOffset: task.reminderOffset !== undefined ? task.reminderOffset : null,
         reminderDays: task.reminderDays || null
       });
     } else {
