@@ -524,7 +524,6 @@ public class TaskViewModel extends AndroidViewModel {
     }
     
     public void forceRefreshTasks() {
-        Log.w("MyToDo", "FORCE REFRESH DEBUG: Force refreshing tasks called");
         // Force a complete refresh by getting fresh data directly from the database
         // and updating the categorized tasks immediately
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -532,20 +531,18 @@ public class TaskViewModel extends AndroidViewModel {
                 // Get fresh data directly from the database on background thread
                 List<Task> freshTasks = repository.getAllTasksSync();
                 if (freshTasks != null) {
-                    Log.w("MyToDo", "FORCE REFRESH DEBUG: Got " + freshTasks.size() + " fresh tasks from database");
                     // Update UI on main thread with fresh data
                     new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                         processTasksByCategory(freshTasks);
                     });
                 } else {
-                    Log.w("MyToDo", "FORCE REFRESH DEBUG: Got null fresh tasks from database");
                     // Fallback to empty update
                     new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                         updateTasksByCategory(new ArrayList<>());
                     });
                 }
             } catch (Exception e) {
-                Log.e("MyToDo", "FORCE REFRESH DEBUG: Error getting fresh tasks", e);
+                Log.e("MyToDo", "Error getting fresh tasks", e);
                 // Fallback to empty update
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                     updateTasksByCategory(new ArrayList<>());
