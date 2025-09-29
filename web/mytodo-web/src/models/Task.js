@@ -16,6 +16,7 @@ export class Task {
     this.manualPosition = data.manualPosition || null;
     this.createdAt = data.createdAt || Date.now();
     this.updatedAt = data.updatedAt || Date.now();
+    this.deletedAt = data.deletedAt || null;
     
     // FamilySync integration fields
     this.sourceApp = data.sourceApp || null;
@@ -41,7 +42,8 @@ export class Task {
       reminderDays: this.reminderDays,
       manualPosition: this.manualPosition,
       createdAt: this.createdAt,
-      updatedAt: this.updatedAt
+      updatedAt: this.updatedAt,
+      deletedAt: this.deletedAt
     };
 
     // Include FamilySync fields if they exist
@@ -122,5 +124,10 @@ export class Task {
       isFromFamilySync: isFromFS
     });
     return isFromFS;
+  }
+
+  // Check if task is deleted
+  isDeleted() {
+    return this.deletedAt !== null && this.deletedAt !== undefined;
   }
 }

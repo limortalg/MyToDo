@@ -74,24 +74,23 @@ public class BootReceiver extends BroadcastReceiver {
                                     reminderTime.add(java.util.Calendar.MINUTE, -task.reminderOffset);
                                 } else if (task.dayOfWeek != null) {
                                     // Handle day-of-week tasks
-                                    String[] daysOfWeek = context.getResources().getStringArray(R.array.days_of_week);
-                                    if (daysOfWeek != null && daysOfWeek.length > 2) {
-                                        int targetDay = -1;
-                                        for (int i = 3; i < daysOfWeek.length; i++) {
-                                            if (daysOfWeek[i].equals(task.dayOfWeek)) {
-                                                targetDay = i - 2; // Map to Calendar.DAY_OF_WEEK
-                                                break;
-                                            }
+                                    int targetDay = -1;
+                                    String[] englishDays = {TaskConstants.DAY_SUNDAY, TaskConstants.DAY_MONDAY, TaskConstants.DAY_TUESDAY, 
+                                                           TaskConstants.DAY_WEDNESDAY, TaskConstants.DAY_THURSDAY, TaskConstants.DAY_FRIDAY, TaskConstants.DAY_SATURDAY};
+                                    for (int i = 0; i < englishDays.length; i++) {
+                                        if (englishDays[i].equals(task.dayOfWeek)) {
+                                            targetDay = i + 1; // Map to Calendar.DAY_OF_WEEK (1=Sunday, ..., 7=Saturday)
+                                            break;
                                         }
-                                        if (targetDay != -1) {
-                                            java.util.Calendar today = java.util.Calendar.getInstance();
-                                            int currentDay = today.get(java.util.Calendar.DAY_OF_WEEK);
-                                            int daysToAdd = (targetDay - currentDay + 7) % 7;
-                                            if (daysToAdd == 0 && today.getTimeInMillis() > reminderTime.getTimeInMillis()) {
-                                                daysToAdd = 7; // Schedule for next week if time has passed today
-                                            }
-                                            reminderTime.add(java.util.Calendar.DAY_OF_MONTH, daysToAdd);
+                                    }
+                                    if (targetDay != -1) {
+                                        java.util.Calendar today = java.util.Calendar.getInstance();
+                                        int currentDay = today.get(java.util.Calendar.DAY_OF_WEEK);
+                                        int daysToAdd = (targetDay - currentDay + 7) % 7;
+                                        if (daysToAdd == 0 && today.getTimeInMillis() > reminderTime.getTimeInMillis()) {
+                                            daysToAdd = 7; // Schedule for next week if time has passed today
                                         }
+                                        reminderTime.add(java.util.Calendar.DAY_OF_MONTH, daysToAdd);
                                     }
                                 } else {
                                     // Handle time-only tasks

@@ -662,8 +662,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // Determine selectedDayIndex for daily recurring tasks
                     String[] recurrenceTypes = context.getResources().getStringArray(R.array.recurrence_types);
                     String dailyRecurrenceType = recurrenceTypes[0];
-                    boolean isDailyRecurring = task.isRecurring && (dailyRecurrenceType.equals(task.recurrenceType) ||
-                            "Daily".equals(task.recurrenceType) || "יומי".equals(task.recurrenceType));
+                    boolean isDailyRecurring = task.isRecurring && TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
 
                     if (isDailyRecurring) {
                         String taskCategory = getCategoryForTask(task, position);
@@ -713,8 +712,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 // Check if this is a daily recurring task
                 String[] recurrenceTypes = context.getResources().getStringArray(R.array.recurrence_types);
                 String dailyRecurrenceType = recurrenceTypes[0]; // "Daily" or "יומי"
-                boolean isDailyRecurring = task.isRecurring && (dailyRecurrenceType.equals(task.recurrenceType) || 
-                        "Daily".equals(task.recurrenceType) || "יומי".equals(task.recurrenceType));
+                boolean isDailyRecurring = task.isRecurring && TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
                 
                 if (isDailyRecurring) {
                     // For daily tasks, check if this specific day instance is selected
@@ -761,7 +759,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 dueText = label + ": " + new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(completionCal.getTime());
             } else if (task.dueDate != null) {
                 dueText = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate);
-            } else if (task.dayOfWeek != null && task.dayOfWeek.equals(daysOfWeek[1])) {
+            } else if (task.dayOfWeek != null && task.dayOfWeek.equals(TaskConstants.DAY_IMMEDIATE)) {
                 dueText = daysOfWeek[1]; // Immediate
             }
             // Removed dayOfWeek display since it's redundant when task is already in the correct category
@@ -772,7 +770,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 dueText += " " + timeText;
             }
             
-            if (task.isRecurring && task.recurrenceType != null && !task.recurrenceType.equals(daysOfWeek[1])) {
+            if (task.isRecurring && task.recurrenceType != null && !task.recurrenceType.equals(TaskConstants.DAY_IMMEDIATE)) {
                 dueText += " (" + task.recurrenceType + ")";
             }
             
@@ -827,8 +825,7 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                     // Check if this is a daily recurring task
                     String[] recurrenceTypes = context.getResources().getStringArray(R.array.recurrence_types);
                     String dailyRecurrenceType = recurrenceTypes[0]; // "Daily" or "יומי"
-                    boolean isDailyRecurring = task.isRecurring && (dailyRecurrenceType.equals(task.recurrenceType) || 
-                            "Daily".equals(task.recurrenceType) || "יומי".equals(task.recurrenceType));
+                    boolean isDailyRecurring = task.isRecurring && TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
                     
                     if (isDailyRecurring) {
                         // For daily tasks, find which day this instance belongs to
@@ -883,14 +880,11 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
         
         private boolean isTaskImmediate(Task task) {
             // A task is immediate if:
-            // 1. It has dayOfWeek set to "Immediate" or "מיידי" 
+            // 1. It has dayOfWeek set to "Immediate" (English) or "מיידי" (Hebrew)
             // 2. It has a due date that is overdue (past today)
             
-            String[] daysOfWeek = context.getResources().getStringArray(R.array.days_of_week);
-            String immediateOption = daysOfWeek[1]; // "Immediate" or "מיידי"
-            
-            // Check if task is explicitly marked as immediate
-            if (task.dayOfWeek != null && task.dayOfWeek.equals(immediateOption)) {
+            // Check if task is explicitly marked as immediate (compare with English constant)
+            if (task.dayOfWeek != null && task.dayOfWeek.equals(TaskConstants.DAY_IMMEDIATE)) {
                 return true;
             }
             

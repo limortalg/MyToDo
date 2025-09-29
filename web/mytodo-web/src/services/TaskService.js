@@ -63,11 +63,16 @@ export class TaskService {
     }
   }
 
-  // Delete a task
+  // Delete a task (soft delete to prevent race conditions)
   async deleteTask(taskId) {
     try {
+      console.log('🔥 TASK SERVICE: Soft deleting task:', taskId);
       const taskRef = doc(this.db, this.collectionName, taskId);
-      await deleteDoc(taskRef);
+      await updateDoc(taskRef, {
+        deletedAt: Date.now(),
+        updatedAt: Date.now()
+      });
+      console.log('🔥 TASK SERVICE: Task soft deleted successfully:', taskId);
     } catch (error) {
       console.error('Error deleting task:', error);
       throw error;
@@ -99,10 +104,18 @@ export class TaskService {
           sourceApp: task.sourceApp,
           sourceTaskId: task.sourceTaskId,
           isCompleted: task.isCompleted,
+          deletedAt: task.deletedAt,
+          isDeleted: task.isDeleted(),
           rawData: rawData,
           fullTaskObject: task
         });
-        tasks.push(task);
+        
+        // Only include non-deleted tasks
+        if (!task.isDeleted()) {
+          tasks.push(task);
+        } else {
+          console.log('🔥 TASK SERVICE DEBUG: Skipping deleted task:', task.description);
+        }
       });
       return tasks;
     } catch (error) {
@@ -125,7 +138,10 @@ export class TaskService {
         const tasks = [];
         querySnapshot.forEach((doc) => {
           const task = Task.fromFirestore(doc.id, doc.data());
-          tasks.push(task);
+          // Only include non-deleted tasks
+          if (!task.isDeleted()) {
+            tasks.push(task);
+          }
         });
         callback(tasks);
       });

@@ -64,7 +64,9 @@ public class SyncManager {
 
     // Main sync method - handles bidirectional sync
     public void syncTasks(SyncCallback callback) {
+        Log.d(TAG, "syncTasks: Starting sync - timestamp: " + System.currentTimeMillis());
         if (!firestoreService.isUserAuthenticated()) {
+            Log.d(TAG, "syncTasks: User not authenticated, aborting sync");
             callback.onSyncComplete(false, "User not authenticated");
             return;
         }
@@ -283,12 +285,12 @@ public class SyncManager {
                     firestoreService.saveTask(localTask, new FirestoreService.FirestoreCallback() {
                         @Override
                         public void onSuccess(Object result) {
-                            Log.d(TAG, "Uploaded new local task: " + localTask.description + " with ID: " + result);
+                            Log.d(TAG, "Uploaded new local task: " + localTask.description + " with ID: " + result + " - timestamp: " + System.currentTimeMillis());
                             // Update the local task with the firestoreDocumentId on background thread
                             localTask.firestoreDocumentId = (String) result;
                             executorService.execute(() -> {
                                 taskDao.update(localTask);
-                                Log.d(TAG, "Updated local task " + localTask.id + " with FirestoreID: " + localTask.firestoreDocumentId);
+                                Log.d(TAG, "Updated local task " + localTask.id + " with FirestoreID: " + localTask.firestoreDocumentId + " - timestamp: " + System.currentTimeMillis());
                             });
                         }
 
@@ -335,11 +337,11 @@ public class SyncManager {
             List<limor.tal.mytodo.Task> tasksToDelete = new ArrayList<>();
             for (limor.tal.mytodo.Task localTask : localChanges) {
                 if (localTask.firestoreDocumentId != null && !cloudMap.containsKey(localTask.firestoreDocumentId)) {
-                    Log.d(TAG, "Task to delete (no longer in cloud): " + localTask.description);
+                    Log.d(TAG, "Task to delete (no longer in cloud): " + localTask.description + " (ID: " + localTask.id + ", FirestoreID: " + localTask.firestoreDocumentId + ")");
                     tasksToDelete.add(localTask);
                 }
             }
-            Log.d(TAG, "Found " + tasksToDelete.size() + " tasks to delete");
+            Log.d(TAG, "Found " + tasksToDelete.size() + " tasks to delete - timestamp: " + System.currentTimeMillis());
             
             // Update local database with cloud changes (run on background thread)
             executorService.execute(() -> updateLocalDatabase(tasksToUpdate, tasksToInsert, tasksToDelete, callback));
@@ -416,6 +418,7 @@ public class SyncManager {
             
             // Delete tasks that are no longer in cloud
             for (limor.tal.mytodo.Task task : tasksToDelete) {
+                Log.d(TAG, "Deleting task from local DB: " + task.description + " (ID: " + task.id + ", FirestoreID: " + task.firestoreDocumentId + ") - timestamp: " + System.currentTimeMillis());
                 taskDao.delete(task);
             }
             
@@ -485,6 +488,7 @@ public class SyncManager {
 
     // Force sync (ignore time check)
     public void forceSync(SyncCallback callback) {
+        Log.d(TAG, "forceSync: Starting forced sync - timestamp: " + System.currentTimeMillis());
         syncTasks(callback);
     }
     

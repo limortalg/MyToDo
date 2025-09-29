@@ -127,6 +127,11 @@ public class MainActivity extends AppCompatActivity {
         
         // Run migration to convert Hebrew values to English
         Log.d("MyToDo", "MainActivity: Starting migration to English values");
+        // Force migration to run again to fix any remaining Hebrew values
+        getSharedPreferences("MyToDoPrefs", Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean("task_migration_to_english_completed", false)
+                .apply();
         TaskMigrationUtils.migrateTasksToEnglishAsync(this);
         
         // Setup language change receiver
@@ -1312,7 +1317,9 @@ public class MainActivity extends AppCompatActivity {
                     }
                     
                     // Convert Hebrew day name to English for database storage
+                    Log.d("MyToDo", "showTaskDialog: Converting selectedDayOfWeek: '" + selectedDayOfWeek + "' to English");
                     String englishDayOfWeek = TaskTranslationUtils.convertHebrewToEnglishDayName(selectedDayOfWeek);
+                    Log.d("MyToDo", "showTaskDialog: Converted to englishDayOfWeek: '" + englishDayOfWeek + "'");
                     String englishRecurrenceType = task.isRecurring ? 
                         TaskTranslationUtils.convertHebrewToEnglishRecurrenceType(getSelectedRecurrenceType(recurrenceTypeSpinner)) : null;
                     
@@ -1435,11 +1442,14 @@ public class MainActivity extends AppCompatActivity {
                    }
                    
                    // Delete the task
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: About to delete task locally - " + task.description + " (ID: " + task.id + ")");
                    viewModel.delete(task);
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: Local deletion completed for task - " + task.description);
                    selectedTask = null;
                    updateButtonStates();
                    
                    // Delete from cloud if user is authenticated and task has a firestoreDocumentId
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: Checking cloud deletion conditions - isUserSignedIn: " + authService.isUserSignedIn() + ", firestoreDocumentId: " + task.firestoreDocumentId);
                    if (authService.isUserSignedIn() && task.firestoreDocumentId != null) {
                        // Directly delete from cloud for immediate effect
                        FirestoreService firestoreService = new FirestoreService();
@@ -1479,6 +1489,8 @@ public class MainActivity extends AppCompatActivity {
                                Log.d("MyToDo", "Task deletion sync progress: " + message);
                            }
                        });
+                   } else {
+                       Log.d("MyToDo", "showDeleteConfirmationDialog: Not authenticated, skipping cloud deletion");
                    }
                    
                    Toast.makeText(this, getString(R.string.task_deleted), Toast.LENGTH_SHORT).show();
@@ -1650,7 +1662,7 @@ public class MainActivity extends AppCompatActivity {
         
         // If task is already set to today, start from tomorrow
         String taskCurrentDay = task.dayOfWeek;
-        if (taskCurrentDay != null && taskCurrentDay.equals(daysOfWeek[startDayIndex])) {
+        if (taskCurrentDay != null && taskCurrentDay.equals(TaskConstants.getEnglishDayName(Calendar.getInstance().get(Calendar.DAY_OF_WEEK)))) {
             // Move to next day, wrapping around from Saturday (9) to Sunday (3)
             if (startDayIndex == 9) {
                 startDayIndex = 3; // Saturday -> Sunday
@@ -1680,17 +1692,17 @@ public class MainActivity extends AppCompatActivity {
         
         // Now disable (gray out) the current category instead of hiding it
         if (taskCurrentDay != null) {
-            if (taskCurrentDay.equals(daysOfWeek[0])) {
+            if (TaskConstants.DAY_NONE.equals(taskCurrentDay)) {
                 // Task is in "Waiting" category - disable the waiting button
                 noneButton.setEnabled(false);
                 noneButton.setBackground(getResources().getDrawable(R.drawable.rounded_button_disabled));
                 Log.d("MyToDo", "showMoveTaskDialog: Disabled waiting button - task is already in waiting category");
-            } else if (taskCurrentDay.equals(daysOfWeek[1])) {
+            } else if (TaskConstants.DAY_IMMEDIATE.equals(taskCurrentDay)) {
                 // Task is in "Immediate" category - disable the immediate button
                 immediateButton.setEnabled(false);
                 immediateButton.setBackground(getResources().getDrawable(R.drawable.rounded_button_disabled));
                 Log.d("MyToDo", "showMoveTaskDialog: Disabled immediate button - task is already in immediate category");
-            } else if (taskCurrentDay.equals(daysOfWeek[2])) {
+            } else if (TaskConstants.DAY_SOON.equals(taskCurrentDay)) {
                 // Task is in "Soon" category - disable the soon button
                 soonButton.setEnabled(false);
                 soonButton.setBackground(getResources().getDrawable(R.drawable.rounded_button_disabled));
@@ -1933,9 +1945,7 @@ public class MainActivity extends AppCompatActivity {
             if (task.isRecurring && task.reminderDays != null && !task.reminderDays.isEmpty()) {
                 String[] recurrenceTypes = getResources().getStringArray(R.array.recurrence_types);
                 String dailyRecurrenceType = recurrenceTypes[0]; // "Daily" or "יומי"
-                boolean isDailyRecurring = dailyRecurrenceType.equals(task.recurrenceType) || 
-                                         "Daily".equals(task.recurrenceType) || 
-                                         "יומי".equals(task.recurrenceType);
+                boolean isDailyRecurring = TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
                 
                 if (isDailyRecurring) {
                     // Parse reminder days and check if today is included
@@ -2032,15 +2042,17 @@ public class MainActivity extends AppCompatActivity {
                 reminderTime.set(Calendar.SECOND, 0);
                 reminderTime.set(Calendar.MILLISECOND, 0);
                 reminderTime.add(Calendar.MINUTE, -task.reminderOffset);
-            } else if (task.dayOfWeek != null && daysOfWeek.length > 2 && 
-                    !task.dayOfWeek.equals(daysOfWeek[0]) &&
-                    !task.dayOfWeek.equals(daysOfWeek[1]) &&
-                    !task.dayOfWeek.equals(daysOfWeek[2])) {
+            } else if (task.dayOfWeek != null && 
+                    !TaskConstants.DAY_NONE.equals(task.dayOfWeek) &&
+                    !TaskConstants.DAY_IMMEDIATE.equals(task.dayOfWeek) &&
+                    !TaskConstants.DAY_SOON.equals(task.dayOfWeek)) {
                 // Calculate next occurrence of dayOfWeek
                 int targetDay = -1;
-                for (int i = 3; i < daysOfWeek.length; i++) {
-                    if (daysOfWeek[i].equals(task.dayOfWeek)) {
-                        targetDay = i - 2; // Map to Calendar.DAY_OF_WEEK (1=Sunday, ..., 7=Saturday)
+                String[] englishDays = {TaskConstants.DAY_SUNDAY, TaskConstants.DAY_MONDAY, TaskConstants.DAY_TUESDAY, 
+                                       TaskConstants.DAY_WEDNESDAY, TaskConstants.DAY_THURSDAY, TaskConstants.DAY_FRIDAY, TaskConstants.DAY_SATURDAY};
+                for (int i = 0; i < englishDays.length; i++) {
+                    if (englishDays[i].equals(task.dayOfWeek)) {
+                        targetDay = i + 1; // Map to Calendar.DAY_OF_WEEK (1=Sunday, ..., 7=Saturday)
                         break;
                     }
                 }
@@ -2574,7 +2586,7 @@ public class MainActivity extends AppCompatActivity {
         
         // Non-daily tasks can always be completed/uncompleted
         if (!task.isRecurring || task.recurrenceType == null || 
-            (!task.recurrenceType.equals("Daily") && !task.recurrenceType.equals("יומי"))) {
+            !TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType)) {
             return true;
         }
         
@@ -2623,7 +2635,7 @@ public class MainActivity extends AppCompatActivity {
         // For daily recurring tasks, we need to determine which day category the user 
         // selected this task from, since they appear in all day categories
         if (task.isRecurring && (task.recurrenceType != null && 
-                (task.recurrenceType.equals("Daily") || task.recurrenceType.equals("יומי")))) {
+                TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType))) {
             // Check which day category is currently expanded or was last interacted with
             String[] daysOfWeek = getResources().getStringArray(R.array.days_of_week);
             if (daysOfWeek == null || daysOfWeek.length < 10) {

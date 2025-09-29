@@ -23,6 +23,7 @@ public class Task {
     public String firestoreDocumentId; // Firestore document ID for cloud sync
     public Long createdAt; // Timestamp when task was created
     public Long updatedAt; // Timestamp when task was last updated
+    public Long deletedAt; // Timestamp when task was deleted (null = not deleted)
     
     // FamilySync integration fields
     public String sourceApp; // "familysync" if imported from FamilySync
