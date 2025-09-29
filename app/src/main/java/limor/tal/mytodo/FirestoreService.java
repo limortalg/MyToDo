@@ -43,12 +43,18 @@ public class FirestoreService {
         this.auth = FirebaseAuth.getInstance();
         this.familySyncService = new FamilySyncService();
         
-        // Disable offline persistence to ensure we always get fresh data from server
-        FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
-                .setPersistenceEnabled(false)
-                .build();
-        this.db.setFirestoreSettings(settings);
-        Log.d(TAG, "Firestore offline persistence disabled - will always fetch fresh data from server");
+        // Only set Firestore settings if they haven't been set yet
+        try {
+            // Disable offline persistence to ensure we always get fresh data from server
+            FirebaseFirestoreSettings settings = new FirebaseFirestoreSettings.Builder()
+                    .setPersistenceEnabled(false)
+                    .build();
+            this.db.setFirestoreSettings(settings);
+            Log.d(TAG, "Firestore offline persistence disabled - will always fetch fresh data from server");
+        } catch (IllegalStateException e) {
+            // Firestore settings already set, this is fine
+            Log.d(TAG, "Firestore settings already configured, using existing settings");
+        }
     }
 
     // Save a single task to Firestore
@@ -195,6 +201,14 @@ public class FirestoreService {
                                     FirestoreTask firestoreTask = document.toObject(FirestoreTask.class);
                                     if (firestoreTask != null) {
                                         firestoreTask.documentId = document.getId();
+                                        
+                                        // Skip soft-deleted tasks
+                                        if (firestoreTask.isDeleted()) {
+                                            Log.d(TAG, "Skipping soft-deleted task: " + firestoreTask.description + 
+                                                  " (deletedAt: " + firestoreTask.deletedAt + ")");
+                                            continue;
+                                        }
+                                        
                                         Log.d(TAG, "Loaded FirestoreTask: " + firestoreTask.description + 
                                               ", sourceApp: " + firestoreTask.sourceApp + 
                                               ", sourceTaskId: " + firestoreTask.sourceTaskId);

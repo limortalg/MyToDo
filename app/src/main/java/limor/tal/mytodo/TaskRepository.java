@@ -41,14 +41,27 @@ public class TaskRepository {
     }
 
     public List<Task> getAllTasksSync() {
-        return taskDao.getAllTasksSync();
+        List<Task> tasks = taskDao.getAllTasksSync();
+        Log.w("MyToDo", "DATABASE QUERY DEBUG: getAllTasksSync returned " + tasks.size() + " tasks");
+        for (Task task : tasks) {
+            Log.w("MyToDo", "DATABASE QUERY DEBUG: Task: " + task.description + 
+                  " (ID: " + task.id + 
+                  ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                  ", updatedAt: " + task.updatedAt + ")");
+        }
+        return tasks;
     }
 
     public void insert(Task task) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            Log.d("MyToDo", "Inserting task: " + task.description + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek);
+            Log.w("MyToDo", "DATABASE INSERT DEBUG: Inserting task: " + task.description + 
+                  " (ID: " + task.id + 
+                  ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                  ", dueDate: " + task.dueDate + 
+                  ", dayOfWeek: " + task.dayOfWeek + 
+                  ", updatedAt: " + task.updatedAt + ")");
             taskDao.insert(task);
-            Log.d("MyToDo", "Task inserted successfully: " + task.description);
+            Log.w("MyToDo", "DATABASE INSERT DEBUG: Task inserted successfully: " + task.description + " (ID: " + task.id + ")");
         });
     }
 

@@ -62,12 +62,27 @@ public class TaskViewModel extends AndroidViewModel {
         long currentTime = System.currentTimeMillis();
         task.createdAt = currentTime;
         task.updatedAt = currentTime;
+        
+        Log.d("MyToDo", "TASK INSERT DEBUG: Inserting new task: " + task.description + 
+              " (ID: " + task.id + 
+              ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+              ", createdAt: " + currentTime + 
+              ", reminderOffset: " + task.reminderOffset + ")");
+        
         repository.insert(task);
     }
 
     public void update(Task task) {
         // Set updatedAt timestamp before updating
-        task.updatedAt = System.currentTimeMillis();
+        long currentTime = System.currentTimeMillis();
+        task.updatedAt = currentTime;
+        
+        Log.d("MyToDo", "TASK UPDATE DEBUG: Updating task: " + task.description + 
+              " (ID: " + task.id + 
+              ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+              ", updatedAt: " + currentTime + 
+              ", reminderOffset: " + task.reminderOffset + ")");
+        
         repository.update(task);
         // Force refresh of allTasks to ensure UI gets updated data
         // This will trigger the observer in MainActivity which calls updateTasksByCategory()
@@ -110,7 +125,7 @@ public class TaskViewModel extends AndroidViewModel {
             Log.d("MyToDo", "Tasks list is null, setting empty tasksByCategory");
             return;
         }
-        Log.d("MyToDo", "updateTasksByCategory: Processing " + tasks.size() + " tasks");
+        // Log.d("MyToDo", "updateTasksByCategory: Processing " + tasks.size() + " tasks");
         
         // Force refresh if tasks list is empty but we expect tasks
         if (tasks.isEmpty()) {
@@ -211,9 +226,9 @@ public class TaskViewModel extends AndroidViewModel {
 
         for (Task task : tasks) {
             // Add detailed logging for each task being processed
-            Log.d("MyToDo", "processTasksByCategory: Processing task ID " + task.id + " - " + task.description + 
-                    ", isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate + 
-                    ", isRecurring: " + task.isRecurring + ", dayOfWeek: " + task.dayOfWeek);
+            // Log.d("MyToDo", "processTasksByCategory: Processing task ID " + task.id + " - " + task.description + 
+            //       ", isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate + 
+            //       ", isRecurring: " + task.isRecurring + ", dayOfWeek: " + task.dayOfWeek);
             
             // For all recurring tasks, always process them regardless of completion status
             boolean isRecurring = task.isRecurring;
@@ -230,7 +245,7 @@ public class TaskViewModel extends AndroidViewModel {
                 continue;
             }
             
-            Log.d("MyToDo", "Processing task for search: " + task.description + ", query: '" + query + "'");
+            // Log.d("MyToDo", "Processing task for search: " + task.description + ", query: '" + query + "'");
             Log.d("MyToDo", "Task: " + task.description + ", isRecurring: " + task.isRecurring + 
                     ", recurrenceType: " + task.recurrenceType);
 
@@ -509,7 +524,7 @@ public class TaskViewModel extends AndroidViewModel {
     }
     
     public void forceRefreshTasks() {
-        Log.d("MyToDo", "Force refreshing tasks");
+        Log.w("MyToDo", "FORCE REFRESH DEBUG: Force refreshing tasks called");
         // Force a complete refresh by getting fresh data directly from the database
         // and updating the categorized tasks immediately
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -517,20 +532,20 @@ public class TaskViewModel extends AndroidViewModel {
                 // Get fresh data directly from the database on background thread
                 List<Task> freshTasks = repository.getAllTasksSync();
                 if (freshTasks != null) {
-                    Log.d("MyToDo", "forceRefreshTasks: Got " + freshTasks.size() + " fresh tasks from database");
+                    Log.w("MyToDo", "FORCE REFRESH DEBUG: Got " + freshTasks.size() + " fresh tasks from database");
                     // Update UI on main thread with fresh data
                     new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                         processTasksByCategory(freshTasks);
                     });
                 } else {
-                    Log.w("MyToDo", "forceRefreshTasks: Got null fresh tasks from database");
+                    Log.w("MyToDo", "FORCE REFRESH DEBUG: Got null fresh tasks from database");
                     // Fallback to empty update
                     new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                         updateTasksByCategory(new ArrayList<>());
                     });
                 }
             } catch (Exception e) {
-                Log.e("MyToDo", "forceRefreshTasks: Error getting fresh tasks", e);
+                Log.e("MyToDo", "FORCE REFRESH DEBUG: Error getting fresh tasks", e);
                 // Fallback to empty update
                 new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
                     updateTasksByCategory(new ArrayList<>());
@@ -545,8 +560,8 @@ public class TaskViewModel extends AndroidViewModel {
 
         // Check if this is a daily recurring task (now only English values in database)
         boolean isDailyRecurring = task.isRecurring && TaskConstants.RECURRENCE_DAILY.equals(task.recurrenceType);
-        Log.d("MyToDo", "Processing single task: " + task.description + ", isRecurring: " + task.isRecurring + 
-                ", recurrenceType: " + task.recurrenceType + ", isDailyRecurring: " + isDailyRecurring);
+        // Log.d("MyToDo", "Processing single task: " + task.description + ", isRecurring: " + task.isRecurring + 
+        //         ", recurrenceType: " + task.recurrenceType + ", isDailyRecurring: " + isDailyRecurring);
 
         // For recurring tasks, check if they should be completable for this day
         boolean isCompletableForThisDay = true;
@@ -662,39 +677,18 @@ public class TaskViewModel extends AndroidViewModel {
             completedTasks.add(task);
             Log.d("MyToDo", "Task added to Completed: " + task.description);
         } else {
-            // For daily recurring tasks, add to all day categories
-            if (isDailyRecurring) {
-                Log.d("MyToDo", "Adding daily recurring task to all " + dayTasks.size() + " day categories");
-                // Add to each day category in the current week order
-                for (int i = 0; i < dayTasks.size(); i++) {
+            // Regular task - add to specific day category
+            boolean added = false;
+            for (int i = 0; i < dayIndices.length; i++) {
+                if (category.equals(daysOfWeek[dayIndices[i]])) {
                     dayTasks.get(i).add(task);
-                    String dayName = daysOfWeek[dayIndices[i]];
-                    Log.d("MyToDo", "Daily recurring task added to " + dayName + " (index " + i + "): " + task.description);
+                    Log.d("MyToDo", "Task added to " + category + " (index " + i + "): " + task.description);
+                    added = true;
+                    break;
                 }
-                Log.d("MyToDo", "Daily recurring task: " + task.description + " added to all day categories");
-                
-                // Debug: Check the contents of each day category
-                for (int i = 0; i < dayTasks.size(); i++) {
-                    String dayName = daysOfWeek[dayIndices[i]];
-                    Log.d("MyToDo", "Day category " + dayName + " now has " + dayTasks.get(i).size() + " tasks");
-                    for (Task t : dayTasks.get(i)) {
-                        Log.d("MyToDo", "  - " + t.description + " (id: " + t.id + ")");
-                    }
-                }
-            } else {
-                // Regular task - add to specific day category
-                boolean added = false;
-                for (int i = 0; i < dayIndices.length; i++) {
-                    if (category.equals(daysOfWeek[dayIndices[i]])) {
-                        dayTasks.get(i).add(task);
-                        Log.d("MyToDo", "Task added to " + category + " (index " + i + "): " + task.description);
-                        added = true;
-                        break;
-                    }
-                }
-                if (!added) {
-                    Log.w("MyToDo", "Task not added to any day category: " + task.description + ", category: " + category);
-                }
+            }
+            if (!added) {
+                Log.w("MyToDo", "Task not added to any day category: " + task.description + ", category: " + category);
             }
         }
         Log.d("MyToDo", "Task: " + task.description + ", Category: " + category +

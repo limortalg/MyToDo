@@ -22,6 +22,7 @@ public class FirestoreTask {
     public Integer manualPosition; // Manual position from drag operations
     public Long createdAt; // Timestamp when task was created
     public Long updatedAt; // Timestamp when task was last updated
+    public Long deletedAt; // Timestamp when task was deleted (null = not deleted)
     public String syncStatus; // "pending", "synced", "conflict"
     
     // FamilySync export tracking fields
@@ -66,6 +67,7 @@ public class FirestoreTask {
         task.manualPosition = this.manualPosition;
         task.createdAt = this.createdAt;
         task.updatedAt = this.updatedAt;
+        task.deletedAt = this.deletedAt;
         
         // Sync FamilySync fields
         task.sourceApp = this.sourceApp;
@@ -95,6 +97,7 @@ public class FirestoreTask {
         firestoreTask.manualPosition = task.manualPosition;
         firestoreTask.createdAt = task.createdAt;
         firestoreTask.updatedAt = task.updatedAt;
+        firestoreTask.deletedAt = task.deletedAt;
         firestoreTask.syncStatus = "pending";
         
         // Sync FamilySync fields
@@ -126,6 +129,7 @@ public class FirestoreTask {
         map.put("manualPosition", manualPosition);
         map.put("createdAt", createdAt);
         map.put("updatedAt", updatedAt);
+        map.put("deletedAt", deletedAt);
         map.put("syncStatus", syncStatus);
         map.put("sourceApp", sourceApp);
         map.put("sourceTaskId", sourceTaskId);
@@ -148,6 +152,11 @@ public class FirestoreTask {
     // Check if task is exported from FamilySync
     public boolean isExportedFromFamilySync() {
         return "familysync".equals(sourceApp) && sourceTaskId != null;
+    }
+    
+    // Check if task is deleted (soft delete)
+    public boolean isDeleted() {
+        return deletedAt != null && deletedAt > 0;
     }
     
     // Get FamilySync source info for display

@@ -44,6 +44,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import limor.tal.mytodo.AppDatabase;
 import limor.tal.mytodo.TaskDao;
 import limor.tal.mytodo.SyncManager;
+import limor.tal.mytodo.TaskApplication;
 import limor.tal.mytodo.FirebaseAuthService;
 
 import java.text.SimpleDateFormat;
@@ -122,11 +123,11 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         
         // Initialize sync services
-        syncManager = new SyncManager(this);
+        syncManager = TaskApplication.getSyncManager();
         authService = new FirebaseAuthService(this);
         
         // Run migration to convert Hebrew values to English
-        Log.d("MyToDo", "MainActivity: Starting migration to English values");
+        // Log.d("MyToDo", "MainActivity: Starting migration to English values");
         // Force migration to run again to fix any remaining Hebrew values
         getSharedPreferences("MyToDoPrefs", Context.MODE_PRIVATE)
                 .edit()
@@ -303,10 +304,10 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onChanged(List<Task> tasks) {
                         if (tasks != null) {
-                            Log.d("MyToDo", "onCreate: Found " + tasks.size() + " tasks, looking for taskId: " + taskId);
+                            // Log.d("MyToDo", "onCreate: Found " + tasks.size() + " tasks, looking for taskId: " + taskId);
                             for (Task task : tasks) {
                                 if (task.id == taskId) {
-                                    Log.d("MyToDo", "onCreate: Found completed task: " + task.description + ", id: " + task.id);
+                                    // Log.d("MyToDo", "onCreate: Found completed task: " + task.description + ", id: " + task.id);
                                     // Force refresh the UI to show the completed task
                                     viewModel.updateTasksByCategory(tasks);
                                     Log.d("MyToDo", "onCreate: Forced UI refresh for completed task: " + task.description);
@@ -1352,7 +1353,7 @@ public class MainActivity extends AppCompatActivity {
                         Log.d("MyToDo", "showTaskDialog: No reminder scheduled for existing task (offset: " + reminderOffset + ")");
                     }
                     Log.d("MyToDo", "showTaskDialog: About to call viewModel.update for existing task: " + task.description + ", id: " + task.id);
-                    Log.d("MyToDo", "showTaskDialog: Task details before update - dayOfWeek: " + task.dayOfWeek + ", description: " + task.description);
+                    Log.d("MyToDo", "showTaskDialog: Task details before update - dayOfWeek: " + task.dayOfWeek + ", description: " + task.description + ", firestoreDocumentId: " + task.firestoreDocumentId);
                     viewModel.update(task);
                     Log.d("MyToDo", "showTaskDialog: viewModel.update called for existing task: " + task.description + ", id: " + task.id);
                     
@@ -1363,6 +1364,7 @@ public class MainActivity extends AppCompatActivity {
                     
                     // Sync updated task to cloud if user is authenticated
                     if (authService.isUserSignedIn()) {
+                        Log.d("MyToDo", "showTaskDialog: About to call forceSync for task: " + task.description + ", firestoreDocumentId: " + task.firestoreDocumentId);
                         syncManager.forceSync(new SyncManager.SyncCallback() {
                             @Override
                             public void onSyncComplete(boolean success, String message) {
@@ -2572,10 +2574,7 @@ public class MainActivity extends AppCompatActivity {
         }
         
         // Shutdown sync manager to prevent memory leaks
-        if (syncManager != null) {
-            syncManager.shutdown();
-            Log.d("MyToDo", "onDestroy: SyncManager shutdown");
-        }
+        // SyncManager is now a singleton in Application class, no need to shutdown
     }
     
     /**
