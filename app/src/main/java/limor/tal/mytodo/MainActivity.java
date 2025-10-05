@@ -15,9 +15,7 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
-import android.view.ContextMenu;
 import android.view.LayoutInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -83,7 +81,7 @@ public class MainActivity extends AppCompatActivity {
     private static final String PREF_LANGUAGE = "language";
     private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private static final int REQUEST_CODE_POST_NOTIFICATIONS = 100;
-    private int selectedContextMenuPosition = -1; // Store position of context menu
+    // private int selectedContextMenuPosition = -1; // Store position of context menu - DISABLED: No longer using context menu
     private Task selectedTask = null;
     private static boolean isProcessingEditFromReminder = false;
     private static long lastEditFromReminderTime = 0;
@@ -421,52 +419,83 @@ public class MainActivity extends AppCompatActivity {
         if (completeButton != null) {
             completeButton.setOnClickListener(v -> {
                 if (selectedTask != null) {
-                                            // Check if the button should be enabled (action is allowed)
-                        if (canCompleteTask(selectedTask)) {
-                            // Action is allowed, proceed with completion
+                    // Check if the button should be enabled (action is allowed)                                                        
+                    if (canCompleteTask(selectedTask)) {
+                        // Action is allowed, proceed with completion       
+                        
+                        // Handle recurring task completion
+                        if (selectedTask.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(selectedTask.recurrenceType)) {
+                            // For monthly tasks, update due date to next month and reset to waiting
+                            Log.d("MyToDo", "COMPLETION DEBUG: Before monthly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTimeInMillis(selectedTask.dueDate);
+                            calendar.add(Calendar.MONTH, 1);
+                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                            selectedTask.isCompleted = false;
+                            selectedTask.completionDate = null;
+                            Log.d("MyToDo", "COMPLETION DEBUG: After monthly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Log.d("MyToDo", "Complete button: Monthly task completed and moved to next month: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
+                        } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(selectedTask.recurrenceType)) {
+                            // For weekly tasks, update due date to next week and reset to waiting
+                            Log.d("MyToDo", "COMPLETION DEBUG: Before weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTimeInMillis(selectedTask.dueDate);
+                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                            selectedTask.isCompleted = false;
+                            selectedTask.completionDate = null;
+                            Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Log.d("MyToDo", "Complete button: Weekly task completed and moved to next week: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
+                        } else {
+                            // For non-recurring tasks, just toggle completion status
+                            Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + selectedTask.id + ", isCompleted: " + selectedTask.isCompleted);
                             selectedTask.isCompleted = !selectedTask.isCompleted;
-                            
-                            // Set completion date when marking as completed
-                            if (selectedTask.isCompleted) {
-                                selectedTask.completionDate = System.currentTimeMillis();
-                                Log.d("MyToDo", "Complete button: Task marked as completed with completion date: " + selectedTask.completionDate);
-                                
-                                // Cancel any pending reminder when completing the task
-                                if (selectedTask.reminderOffset != null) {
-                                    cancelReminder(selectedTask.id);
-                                    Log.d("MyToDo", "Complete button: Cancelled reminder for completed task: " + selectedTask.description);
+                            Calendar calendar = Calendar.getInstance();
+                            selectedTask.completionDate = selectedTask.isCompleted ? calendar.getTimeInMillis() : null;
+                            Log.d("MyToDo", "COMPLETION DEBUG: After non-recurring task update - ID: " + selectedTask.id + ", isCompleted: " + selectedTask.isCompleted);
+                            Log.d("MyToDo", "Complete button: Completed task: " + selectedTask.description + ", isCompleted: " + selectedTask.isCompleted + ", id: " + selectedTask.id);
+                        }
+
+                        // Cancel any pending reminder when completing the task
+                        if (selectedTask.reminderOffset != null) {      
+                            cancelReminder(selectedTask.id);
+                            Log.d("MyToDo", "Complete button: Cancelled reminder for completed task: " + selectedTask.description);                     
+                        }
+
+                        Log.d("MyToDo", "COMPLETION DEBUG: About to call viewModel.update() for task ID: " + selectedTask.id);
+                        viewModel.update(selectedTask);
+                        
+                        // Sync task completion to cloud if user is authenticated
+                        if (authService.isUserSignedIn()) {
+                            syncManager.forceSync(new SyncManager.SyncCallback() {
+                                @Override
+                                public void onSyncComplete(boolean success, String message) {
+                                    Log.d("MyToDo", "Task completion sync: " + (success ? "Success" : "Failed") + " - " + message);
                                 }
-                            } else {
-                                // Clear completion date when uncompleting
-                                selectedTask.completionDate = null;
-                                Log.d("MyToDo", "Complete button: Task uncompleted, cleared completion date");
-                                
-                                // Reschedule reminder if task was uncompleted and has a reminder
-                                if (selectedTask.reminderOffset != null && selectedTask.reminderOffset >= 0) {
-                                    try {
-                                        scheduleReminder(selectedTask);
-                                        Log.d("MyToDo", "Complete button: Rescheduled reminder for uncompleted task: " + selectedTask.description);
-                                    } catch (Exception e) {
-                                        Log.e("MyToDo", "Complete button: Error rescheduling reminder for uncompleted task", e);
-                                    }
+
+                                @Override
+                                public void onSyncProgress(String message) {
+                                    Log.d("MyToDo", "Task completion sync progress: " + message);
                                 }
-                            }
-                            
-                            viewModel.update(selectedTask);
+                            });
+                        }
+                        
                         selectedTask = null;
                         updateButtonStates();
-                        
-                        // Refresh widgets after task completion (only if widgets are installed)
+
+                        // Refresh widgets after task completion (only if widgets are installed)                                                                
                         if (WidgetUpdateHelper.hasWidgets(this)) {
                             WidgetUpdateHelper.refreshAllWidgets(this);
                         }
                     } else {
                         // Action not allowed, show explanation
-                        Toast.makeText(this, getString(R.string.daily_task_wrong_day), Toast.LENGTH_LONG).show();
-                        Log.d("MyToDo", "Complete button: Showed explanation for disabled button - daily task wrong day");
+                        Toast.makeText(this, getString(R.string.daily_task_wrong_day), Toast.LENGTH_LONG).show();                                               
+                        Log.d("MyToDo", "Complete button: Showed explanation for disabled button - daily task wrong day");                                      
                     }
                 } else {
-                    Toast.makeText(this, getString(R.string.select_task_to_complete), Toast.LENGTH_SHORT).show();
+                    Toast.makeText(this, getString(R.string.select_task_to_complete), Toast.LENGTH_SHORT).show();                                               
                 }
             });
         }
@@ -1443,56 +1472,36 @@ public class MainActivity extends AppCompatActivity {
                        Log.d("MyToDo", "showDeleteConfirmationDialog: Cancelled reminder for task: " + task.description);
                    }
                    
-                   // Delete the task
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: About to delete task locally - " + task.description + " (ID: " + task.id + ")");
-                   viewModel.delete(task);
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: Local deletion completed for task - " + task.description);
+                   // Soft delete the task (set deletedAt timestamp)
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: About to soft delete task locally - " + task.description + " (ID: " + task.id + ")");              
+                   
+                   // Set deletedAt timestamp for soft deletion
+                   task.deletedAt = System.currentTimeMillis();
+                   task.updatedAt = System.currentTimeMillis();
+                   
+                   // Update the task in the database (soft delete)
+                   viewModel.update(task);
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: Local soft deletion completed for task - " + task.description + " (deletedAt: " + task.deletedAt + ")");                                    
                    selectedTask = null;
                    updateButtonStates();
-                   
-                   // Delete from cloud if user is authenticated and task has a firestoreDocumentId
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: Checking cloud deletion conditions - isUserSignedIn: " + authService.isUserSignedIn() + ", firestoreDocumentId: " + task.firestoreDocumentId);
-                   if (authService.isUserSignedIn() && task.firestoreDocumentId != null) {
-                       // Directly delete from cloud for immediate effect
-                       FirestoreService firestoreService = new FirestoreService();
-                       firestoreService.deleteTask(task.firestoreDocumentId, new FirestoreService.FirestoreCallback() {
-                           @Override
-                           public void onSuccess(Object result) {
-                               Log.d("MyToDo", "Task deleted from cloud successfully: " + task.description);
-                           }
 
-                           @Override
-                           public void onError(String error) {
-                               Log.e("MyToDo", "Failed to delete task from cloud: " + error);
-                               // If cloud deletion fails, trigger a sync to handle it properly
-                               syncManager.forceSync(new SyncManager.SyncCallback() {
-                                   @Override
-                                   public void onSyncComplete(boolean success, String message) {
-                                       Log.d("MyToDo", "Task deletion sync fallback: " + (success ? "Success" : "Failed") + " - " + message);
-                                   }
-
-                                   @Override
-                                   public void onSyncProgress(String message) {
-                                       Log.d("MyToDo", "Task deletion sync fallback progress: " + message);
-                                   }
-                               });
-                           }
-                       });
-                   } else if (authService.isUserSignedIn()) {
-                       // If no firestoreDocumentId, trigger sync to handle the deletion
+                   // Sync the soft deletion to cloud if user is authenticated
+                   Log.d("MyToDo", "showDeleteConfirmationDialog: Checking cloud sync conditions - isUserSignedIn: " + authService.isUserSignedIn() + ", firestoreDocumentId: " + task.firestoreDocumentId);                                
+                   if (authService.isUserSignedIn()) {
+                       // Sync the soft deletion to cloud
                        syncManager.forceSync(new SyncManager.SyncCallback() {
                            @Override
-                           public void onSyncComplete(boolean success, String message) {
-                               Log.d("MyToDo", "Task deletion sync: " + (success ? "Success" : "Failed") + " - " + message);
+                           public void onSyncComplete(boolean success, String message) {                                                                        
+                               Log.d("MyToDo", "Task soft deletion sync: " + (success ? "Success" : "Failed") + " - " + message);                                    
                            }
 
                            @Override
                            public void onSyncProgress(String message) {
-                               Log.d("MyToDo", "Task deletion sync progress: " + message);
+                               Log.d("MyToDo", "Task soft deletion sync progress: " + message);                                                                      
                            }
                        });
                    } else {
-                       Log.d("MyToDo", "showDeleteConfirmationDialog: Not authenticated, skipping cloud deletion");
+                       Log.d("MyToDo", "showDeleteConfirmationDialog: Not authenticated, skipping cloud sync");                                             
                    }
                    
                    Toast.makeText(this, getString(R.string.task_deleted), Toast.LENGTH_SHORT).show();
@@ -2277,30 +2286,32 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    // DISABLED: Context menu no longer used - replaced by bottom button bar
+    /*
     @Override
     public boolean onContextItemSelected(MenuItem item) {
         if (selectedContextMenuPosition == -1) {
-            Log.e("MyToDo", "onContextItemSelected: No context menu position set, cannot process item: " + item.getTitle());
+            Log.e("MyToDo", "onContextItemSelected: No context menu position set, cannot process item: " + item.getTitle());                                    
             return false;
         }
 
-        Task task = adapter.getTaskAtPosition(selectedContextMenuPosition);
+        Task task = adapter.getTaskAtPosition(selectedContextMenuPosition);     
         if (task == null) {
-            Log.e("MyToDo", "onContextItemSelected: No task found at position: " + selectedContextMenuPosition);
-            // Log all visible view tags and adapter items for debugging
+            Log.e("MyToDo", "onContextItemSelected: No task found at position: " + selectedContextMenuPosition);                                                
+            // Log all visible view tags and adapter items for debugging        
             for (int i = 0; i < recyclerView.getChildCount(); i++) {
                 View child = recyclerView.getChildAt(i);
-                RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(child);
+                RecyclerView.ViewHolder holder = recyclerView.getChildViewHolder(child);                                                                        
                 if (holder instanceof TaskAdapter.TaskViewHolder) {
                     Object tag = child.getTag();
                     int holderPosition = holder.getAdapterPosition();
-                    Log.d("MyToDo", "onContextItemSelected: Visible view at index " + i + ", position: " + holderPosition + ", tag: " + tag);
+                    Log.d("MyToDo", "onContextItemSelected: Visible view at index " + i + ", position: " + holderPosition + ", tag: " + tag);                   
                     if (tag instanceof Integer) {
-                        Task taggedTask = adapter.getTaskById((Integer) tag);
+                        Task taggedTask = adapter.getTaskById((Integer) tag);   
                         if (taggedTask != null) {
-                            Log.d("MyToDo", "onContextItemSelected: Task for tag " + tag + ": " + taggedTask.description + ", id: " + taggedTask.id);
+                            Log.d("MyToDo", "onContextItemSelected: Task for tag " + tag + ": " + taggedTask.description + ", id: " + taggedTask.id);           
                         } else {
-                            Log.w("MyToDo", "onContextItemSelected: No task found for tag: " + tag);
+                            Log.w("MyToDo", "onContextItemSelected: No task found for tag: " + tag);                                                            
                         }
                     }
                 }
@@ -2308,62 +2319,95 @@ public class MainActivity extends AppCompatActivity {
             // Log all adapter items
             for (int i = 0; i < adapter.getItemCount(); i++) {
                 Object itemObj = adapter.getItem(i);
-                Log.d("MyToDo", "onContextItemSelected: Adapter item at position " + i + ": " + (itemObj instanceof String ? itemObj : ((Task) itemObj).description + ", id: " + ((Task) itemObj).id));
+                Log.d("MyToDo", "onContextItemSelected: Adapter item at position " + i + ": " + (itemObj instanceof String ? itemObj : ((Task) itemObj).description + ", id: " + ((Task) itemObj).id));                                         
             }
             selectedContextMenuPosition = -1; // Reset
             return false;
         }
 
-        Log.d("MyToDo", "onContextItemSelected: Selected item: " + item.getTitle() + " for task: " + task.description + ", position: " + selectedContextMenuPosition + ", dueDate: " + (task.dueDate != null ? task.dueDate : "null") + ", id: " + task.id);
+        Log.d("MyToDo", "onContextItemSelected: Selected item: " + item.getTitle() + " for task: " + task.description + ", position: " + selectedContextMenuPosition + ", dueDate: " + (task.dueDate != null ? task.dueDate : "null") + ", id: " + task.id);                                                                    
         selectedContextMenuPosition = -1; // Reset after use
 
         switch (item.getItemId()) {
             case 1: // Edit
                 showTaskDialog(task);
-                Log.d("MyToDo", "onContextItemSelected: Opening edit dialog for task: " + task.description + ", id: " + task.id);
+                Log.d("MyToDo", "onContextItemSelected: Opening edit dialog for task: " + task.description + ", id: " + task.id);                               
                 return true;
             case 2: // Move
                 showMoveTaskDialog(task);
-                Log.d("MyToDo", "onContextItemSelected: Opening move dialog for task: " + task.description + ", id: " + task.id);
+                Log.d("MyToDo", "onContextItemSelected: Opening move dialog for task: " + task.description + ", id: " + task.id);                               
                 return true;
             case 3: // Complete
                 // Check if this task can be completed
                 if (!canCompleteTask(task)) {
-                    Toast.makeText(this, getString(R.string.daily_task_wrong_day), Toast.LENGTH_LONG).show();
-                    Log.d("MyToDo", "onContextItemSelected: Prevented completion of daily task " + task.description + " - can only be completed on current day");
+                    Toast.makeText(this, getString(R.string.daily_task_wrong_day), Toast.LENGTH_LONG).show();                                                   
+                    Log.d("MyToDo", "onContextItemSelected: Prevented completion of daily task " + task.description + " - can only be completed on current day");                                                                               
                     return true;
                 }
-                
-                task.isCompleted = !task.isCompleted;
-                Calendar calendar = Calendar.getInstance();
-                task.completionDate = task.isCompleted ? calendar.getTimeInMillis() : null;
+
+                // Handle recurring task completion
+                if (task.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(task.recurrenceType)) {                                                         
+                    // For monthly tasks, update due date to next month and reset to waiting                                                                    
+                    Log.d("MyToDo", "COMPLETION DEBUG: Before monthly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                  
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(task.dueDate);
+                    calendar.add(Calendar.MONTH, 1);
+                    task.dueDate = calendar.getTimeInMillis();
+                    task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                    task.isCompleted = false;
+                    task.completionDate = null;
+                    Log.d("MyToDo", "COMPLETION DEBUG: After monthly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
+                    Log.d("MyToDo", "onContextItemSelected: Monthly task completed and moved to next month: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                     
+                } else if (task.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(task.recurrenceType)) {                                                   
+                    // For weekly tasks, update due date to next week and reset to waiting                                                                      
+                    Log.d("MyToDo", "COMPLETION DEBUG: Before weekly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(task.dueDate);
+                    calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                    task.dueDate = calendar.getTimeInMillis();
+                    task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                    task.isCompleted = false;
+                    task.completionDate = null;
+                    Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                    
+                    Log.d("MyToDo", "onContextItemSelected: Weekly task completed and moved to next week: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                       
+                } else {
+                    // For non-recurring tasks, just toggle completion status   
+                    Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + task.id + ", isCompleted: " + task.isCompleted);              
+                    task.isCompleted = !task.isCompleted;
+                    Calendar calendar = Calendar.getInstance();
+                    task.completionDate = task.isCompleted ? calendar.getTimeInMillis() : null;                                                                 
+                    Log.d("MyToDo", "COMPLETION DEBUG: After non-recurring task update - ID: " + task.id + ", isCompleted: " + task.isCompleted);               
+                    Log.d("MyToDo", "onContextItemSelected: Completed task: " + task.description + ", isCompleted: " + task.isCompleted + ", id: " + task.id);  
+                }
+
+                Log.d("MyToDo", "COMPLETION DEBUG: About to call viewModel.update() for task ID: " + task.id);                                                  
                 viewModel.update(task);
-                Log.d("MyToDo", "onContextItemSelected: Completed task: " + task.description + ", isCompleted: " + task.isCompleted + ", id: " + task.id);
-                
-                // Sync task completion to cloud if user is authenticated
+
+                // Sync task completion to cloud if user is authenticated       
                 if (authService.isUserSignedIn()) {
-                    syncManager.forceSync(new SyncManager.SyncCallback() {
+                    syncManager.forceSync(new SyncManager.SyncCallback() {      
                         @Override
-                        public void onSyncComplete(boolean success, String message) {
-                            Log.d("MyToDo", "Task completion sync: " + (success ? "Success" : "Failed") + " - " + message);
+                        public void onSyncComplete(boolean success, String message) {                                                                           
+                            Log.d("MyToDo", "Task completion sync: " + (success ? "Success" : "Failed") + " - " + message);                                     
                         }
 
                         @Override
                         public void onSyncProgress(String message) {
-                            Log.d("MyToDo", "Task completion sync progress: " + message);
+                            Log.d("MyToDo", "Task completion sync progress: " + message);                                                                       
                         }
                     });
                 }
                 return true;
             case 4: // Delete
                 showDeleteConfirmationDialog(task);
-                Log.d("MyToDo", "onContextItemSelected: Showing delete confirmation for task: " + task.description + ", id: " + task.id);
+                Log.d("MyToDo", "onContextItemSelected: Showing delete confirmation for task: " + task.description + ", id: " + task.id);                       
                 return true;
             default:
-                Log.w("MyToDo", "onContextItemSelected: Unhandled context menu item: " + item.getTitle());
+                Log.w("MyToDo", "onContextItemSelected: Unhandled context menu item: " + item.getTitle());                                                      
                 return super.onContextItemSelected(item);
         }
     }
+    */
 
     private void checkLauncherIconResources() {
         Log.d("MyToDo", "checkLauncherIconResources: Checking launcher icon resources...");

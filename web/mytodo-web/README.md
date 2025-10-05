@@ -100,6 +100,32 @@ MyToDo web app integrates seamlessly with FamilySync for task import and synchro
 - **Date Handling**: date-fns with MUI X Date Pickers
 - **Routing**: React Router
 
+## 🔄 Sync System & Data Management
+
+### Soft Deletion System
+The web app uses **soft deletion** to prevent sync conflicts:
+
+- **How it works**: Tasks are marked with `deletedAt` timestamp instead of being permanently removed
+- **Benefits**: Prevents race conditions when multiple devices sync simultaneously
+- **UI filtering**: Tasks with `deletedAt` set are automatically hidden from the interface
+- **Cloud sync**: Soft deletions are synced to Firestore to prevent re-downloading deleted tasks
+
+### Conflict Resolution
+The app uses **timestamp-based conflict resolution**:
+
+- **Primary method**: Uses `updatedAt` timestamp to determine which version is newer
+- **Prevents data loss**: Completed tasks won't be overwritten by older cloud versions
+- **Smart merging**: Local changes are preserved when they're more recent than cloud changes
+- **Fallback logic**: When timestamps are equal, local version is preferred
+
+### Database Schema
+Key fields for sync management:
+
+- **`deletedAt`**: Timestamp when task was soft deleted (null for active tasks)
+- **`updatedAt`**: Timestamp of last modification for conflict resolution
+- **`firestoreDocumentId`**: Unique identifier for cloud synchronization
+- **`reminderOffset`**: Reminder time in minutes (0 is valid, not null)
+
 ## Project Structure
 
 ```
@@ -133,6 +159,28 @@ The web app can be deployed to any static hosting service:
 2. **Authentication Issues**: Ensure Google Sign-In is enabled in Firebase Console
 3. **No Tasks Showing**: Check if you're signed in with the same Google account as the Android app
 4. **Build Errors**: Make sure all dependencies are installed with `npm install`
+
+### Sync-Related Issues
+
+5. **Tasks Reappear After Deletion**
+   - **Cause**: Race condition between devices during sync
+   - **Solution**: Soft deletion system prevents this - deleted tasks are marked with `deletedAt` timestamp
+   - **Check**: Verify `deletedAt` field is set in Firestore for deleted tasks
+
+6. **Duplicate Tasks After Sync**
+   - **Cause**: Improper conflict resolution during merge operations
+   - **Solution**: Improved merge logic using `updatedAt` timestamps
+   - **Check**: Review sync logs for duplicate task creation
+
+7. **Completed Tasks Reset to Incomplete**
+   - **Cause**: Cloud version overwriting local completion status
+   - **Solution**: Timestamp-based conflict resolution preserves newer changes
+   - **Check**: Verify `updatedAt` timestamps are being set correctly
+
+8. **Reminder Not Showing (reminderOffset: 0)**
+   - **Cause**: JavaScript treating 0 as falsy value
+   - **Solution**: Fixed to explicitly check for null/undefined instead of using truthiness
+   - **Check**: Verify reminderOffset field is properly handled in Task.js and components
 
 ### Support
 

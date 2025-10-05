@@ -77,11 +77,16 @@ public class TaskViewModel extends AndroidViewModel {
         long currentTime = System.currentTimeMillis();
         task.updatedAt = currentTime;
         
-        Log.d("MyToDo", "TASK UPDATE DEBUG: Updating task: " + task.description + 
+        Log.d("MyToDo", "VIEWMODEL UPDATE DEBUG: Updating task: " + task.description + 
               " (ID: " + task.id + 
               ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
               ", updatedAt: " + currentTime + 
-              ", reminderOffset: " + task.reminderOffset + ")");
+              ", reminderOffset: " + task.reminderOffset + 
+              ", isRecurring: " + task.isRecurring + 
+              ", recurrenceType: " + task.recurrenceType + 
+              ", dueDate: " + task.dueDate + 
+              ", dayOfWeek: " + task.dayOfWeek + 
+              ", isCompleted: " + task.isCompleted + ")");
         
         repository.update(task);
         // Force refresh of allTasks to ensure UI gets updated data
@@ -225,6 +230,12 @@ public class TaskViewModel extends AndroidViewModel {
         }
 
         for (Task task : tasks) {
+            // Skip soft-deleted tasks
+            if (task.deletedAt != null && task.deletedAt > 0) {
+                Log.d("MyToDo", "processTasksByCategory: Skipping soft-deleted task: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+                continue;
+            }
+            
             // Add detailed logging for each task being processed
             // Log.d("MyToDo", "processTasksByCategory: Processing task ID " + task.id + " - " + task.description + 
             //       ", isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate + 
@@ -318,33 +329,13 @@ public class TaskViewModel extends AndroidViewModel {
                 Log.d("MyToDo", "Daily recurring task: " + task.description + " added to all day categories");
                 Log.d("MyToDo", "Day tasks sizes after adding daily task: " + Arrays.toString(dayTasks.stream().mapToInt(List::size).toArray()));
             } else if (isRecurring) {
-                // For weekly, bi-weekly, monthly, yearly recurring tasks
-                // They should always appear in their designated day category
-                // Check if the task should appear this week based on its recurrence pattern
-                boolean shouldAppearThisWeek = shouldRecurringTaskAppearThisWeek(task, todayMillis);
+                // For weekly, monthly recurring tasks - process them directly without creating copies
+                // The completion logic in MainActivity now handles due date progression
+                processSingleTask(task, immediateTasks, soonTasks, waitingTasks, completedTasks, dayTasks, 
+                        daysOfWeek, dayIndices, immediateOption, soonOption, waitingCategory, completedCategory, 
+                        noneOption, todayMillis, nextWeekMillis, query, includeCompletedTasks);
                 
-                if (shouldAppearThisWeek) {
-                    // Create a copy for the current week with appropriate completion status
-                    Task taskCopy = new Task(task.description, task.dueDate, task.dayOfWeek, 
-                            task.isRecurring, task.recurrenceType, task.isCompleted, task.priority);
-                    taskCopy.id = task.id;
-                    taskCopy.dueTime = task.dueTime;
-                    taskCopy.reminderOffset = task.reminderOffset;
-                    taskCopy.completionDate = task.completionDate;
-                    
-                    // For non-daily recurring tasks, use the completion status directly
-                    // Recurring tasks should show their current completion status
-                    taskCopy.isCompleted = task.isCompleted;
-                    
-                    // Process the task copy to add it to the appropriate category
-                    processSingleTask(taskCopy, immediateTasks, soonTasks, waitingTasks, completedTasks, dayTasks, 
-                            daysOfWeek, dayIndices, immediateOption, soonOption, waitingCategory, completedCategory, 
-                            noneOption, todayMillis, nextWeekMillis, query, includeCompletedTasks);
-                    
-                    Log.d("MyToDo", "Recurring task (non-daily): " + task.description + " added to appropriate category, isCompleted: " + taskCopy.isCompleted);
-                } else {
-                    Log.d("MyToDo", "Recurring task (non-daily): " + task.description + " should not appear this week");
-                }
+                Log.d("MyToDo", "Recurring task (non-daily): " + task.description + " processed directly, isCompleted: " + task.isCompleted);
             } else {
                 // Process regular task
                 processSingleTask(task, immediateTasks, soonTasks, waitingTasks, completedTasks, dayTasks, 
@@ -592,11 +583,12 @@ public class TaskViewModel extends AndroidViewModel {
             Log.d("MyToDo", "Task dayOfWeek: " + task.dayOfWeek + " mapped to: " + mappedDayOfWeek);
             
             if (TaskConstants.DAY_NONE.equals(task.dayOfWeek)) {
-                // Task has no specific day, check due date or assign to Waiting
+                // Task has "waiting" status - prioritize due date for categorization
                 if (task.dueDate != null) {
                     if (task.dueDate < todayMillis) {
                         category = immediateOption;
                     } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
+                        // Due date is this week - show in specific day category
                         Calendar dueDateCal = Calendar.getInstance();
                         dueDateCal.setTimeInMillis(task.dueDate);
                         int dayOfWeek = dueDateCal.get(Calendar.DAY_OF_WEEK); // 1=Sunday, ..., 7=Saturday
@@ -614,9 +606,11 @@ public class TaskViewModel extends AndroidViewModel {
                         }
                         category = daysOfWeek[dayIndex];
                     } else {
+                        // Due date is beyond this week - show in waiting category
                         category = waitingCategory;
                     }
                 } else {
+                    // No due date - show in waiting category
                     category = waitingCategory;
                 }
             } else if (TaskConstants.DAY_IMMEDIATE.equals(task.dayOfWeek)) {
@@ -624,7 +618,7 @@ public class TaskViewModel extends AndroidViewModel {
             } else if (TaskConstants.DAY_SOON.equals(task.dayOfWeek)) {
                 category = soonOption;
             } else {
-                // Task has a specific day of the week
+                // Task has a specific day of the week - "when to perform" takes precedence over due date
                 category = mappedDayOfWeek;
             }
         } else if (task.dueDate != null) {

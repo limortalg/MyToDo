@@ -296,6 +296,32 @@ implementation 'com.google.android.material:material:1.6.0'
    ./gradlew lint
    ```
 
+## 🔄 Sync System & Data Management
+
+### Soft Deletion System
+MyToDo uses a **soft deletion** system to prevent sync conflicts and data loss:
+
+- **How it works**: Tasks are marked with `deletedAt` timestamp instead of being permanently removed
+- **Benefits**: Prevents race conditions when multiple devices sync simultaneously
+- **UI filtering**: Tasks with `deletedAt` set are automatically hidden from the interface
+- **Cloud sync**: Soft deletions are synced to Firestore to prevent re-downloading deleted tasks
+
+### Conflict Resolution
+The app uses **timestamp-based conflict resolution** to handle sync conflicts:
+
+- **Primary method**: Uses `updatedAt` timestamp to determine which version is newer
+- **Prevents data loss**: Completed tasks won't be overwritten by older cloud versions
+- **Smart merging**: Local changes are preserved when they're more recent than cloud changes
+- **Fallback logic**: When timestamps are equal, local version is preferred to avoid overwriting recent changes
+
+### Database Schema
+The app uses a hybrid local-cloud architecture:
+
+- **Local storage**: Room (SQLite) database for offline support
+- **Cloud storage**: Firestore for synchronization across devices
+- **Key fields**: `deletedAt`, `updatedAt`, `firestoreDocumentId` for sync management
+- **Migration support**: Automatic database schema updates with version management
+
 ## 🐛 Troubleshooting
 
 ### Common Issues
@@ -319,6 +345,28 @@ implementation 'com.google.android.material:material:1.6.0'
    - Check internet connectivity
    - Verify Firebase authentication
    - Review Firestore security rules
+
+### Sync-Related Issues
+
+5. **Tasks Reappear After Deletion**
+   - **Cause**: Race condition between devices during sync
+   - **Solution**: Soft deletion system prevents this - deleted tasks are marked with `deletedAt` timestamp
+   - **Check**: Verify `deletedAt` field is set in Firestore for deleted tasks
+
+6. **Duplicate Tasks After Sync**
+   - **Cause**: Improper conflict resolution during merge operations
+   - **Solution**: Improved merge logic using `updatedAt` timestamps
+   - **Check**: Review sync logs for duplicate task creation
+
+7. **Completed Tasks Reset to Incomplete**
+   - **Cause**: Cloud version overwriting local completion status
+   - **Solution**: Timestamp-based conflict resolution preserves newer changes
+   - **Check**: Verify `updatedAt` timestamps are being set correctly
+
+8. **Tasks Not Syncing Between Devices**
+   - **Cause**: Authentication or network issues
+   - **Solution**: Check Firebase authentication status and internet connectivity
+   - **Check**: Review Firestore security rules and user permissions
 
 ### Debug Information
 
@@ -403,5 +451,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 **MyToDo** - Your personal task management companion across all devices! 📱✨
+
+
 
 

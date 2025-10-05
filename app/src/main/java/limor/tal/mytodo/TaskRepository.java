@@ -52,9 +52,16 @@ public class TaskRepository {
 
     public void update(Task task) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            Log.d("MyToDo", "Updating task: " + task.description);
+            Log.d("MyToDo", "REPOSITORY UPDATE DEBUG: Updating task: " + task.description + 
+                  " (ID: " + task.id + 
+                  ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                  ", isRecurring: " + task.isRecurring + 
+                  ", recurrenceType: " + task.recurrenceType + 
+                  ", dueDate: " + task.dueDate + 
+                  ", dayOfWeek: " + task.dayOfWeek + 
+                  ", isCompleted: " + task.isCompleted + ")");
             taskDao.update(task);
-            Log.d("MyToDo", "Task updated successfully: " + task.description);
+            Log.d("MyToDo", "REPOSITORY UPDATE DEBUG: Task updated successfully: " + task.description + " (ID: " + task.id + ")");
         });
     }
 

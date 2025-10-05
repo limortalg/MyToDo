@@ -141,7 +141,34 @@ public class FirestoreService {
                 });
     }
 
-    // Delete a task from Firestore
+    // Soft delete a task from Firestore (set deletedAt timestamp)
+    public void softDeleteTask(String documentId, FirestoreCallback callback) {
+        if (auth.getCurrentUser() == null) {
+            callback.onError("User not authenticated");
+            return;
+        }
+
+        long deletedAt = System.currentTimeMillis();
+        db.collection(COLLECTION_TASKS)
+                .document(documentId)
+                .update("deletedAt", deletedAt, "updatedAt", deletedAt)
+                .addOnSuccessListener(new OnSuccessListener<Void>() {
+                    @Override
+                    public void onSuccess(Void aVoid) {
+                        Log.d(TAG, "Task soft deleted successfully (deletedAt: " + deletedAt + ")");
+                        callback.onSuccess(null);
+                    }
+                })
+                .addOnFailureListener(new OnFailureListener() {
+                    @Override
+                    public void onFailure(Exception e) {
+                        Log.e(TAG, "Error soft deleting task", e);
+                        callback.onError("Failed to soft delete task: " + e.getMessage());
+                    }
+                });
+    }
+
+    // Hard delete a task from Firestore (completely remove - for cleanup purposes)
     public void deleteTask(String documentId, FirestoreCallback callback) {
         db.collection(COLLECTION_TASKS)
                 .document(documentId)
@@ -149,15 +176,15 @@ public class FirestoreService {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "Task deleted successfully");
+                        Log.d(TAG, "Task hard deleted successfully");
                         callback.onSuccess(null);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(Exception e) {
-                        Log.e(TAG, "Error deleting task", e);
-                        callback.onError("Failed to delete task: " + e.getMessage());
+                        Log.e(TAG, "Error hard deleting task", e);
+                        callback.onError("Failed to hard delete task: " + e.getMessage());
                     }
                 });
     }

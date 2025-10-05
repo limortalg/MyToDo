@@ -221,18 +221,37 @@ public class SyncManager {
                 if (cloudTask.firestoreDocumentId != null && localMap.containsKey(cloudTask.firestoreDocumentId)) {
                     limor.tal.mytodo.Task localTask = localMap.get(cloudTask.firestoreDocumentId);
                     
-                    // Simple conflict resolution: use the more recently updated task
-                    if (cloudTask.completionDate != null && localTask.completionDate != null) {
-                        if (cloudTask.completionDate > localTask.completionDate) {
-                            tasksToUpdate.add(cloudTask);
-                        } else {
-                            tasksToUpdate.add(localTask);
-                        }
+                    Log.d(TAG, "SYNC DEBUG: Found matching task - " + cloudTask.description + 
+                          " (Cloud ID: " + cloudTask.firestoreDocumentId + 
+                          ", Local ID: " + localTask.id + 
+                          ", Cloud updatedAt: " + cloudTask.updatedAt + 
+                          ", Local updatedAt: " + localTask.updatedAt + 
+                          ", Cloud isCompleted: " + cloudTask.isCompleted + 
+                          ", Local isCompleted: " + localTask.isCompleted + 
+                          ", Cloud dueDate: " + cloudTask.dueDate + 
+                          ", Local dueDate: " + localTask.dueDate + ")");
+                    
+                    // Improved conflict resolution: use the more recently updated task based on updatedAt
+                    long localUpdatedAt = localTask.updatedAt != null ? localTask.updatedAt : 0;
+                    long cloudUpdatedAt = cloudTask.updatedAt != null ? cloudTask.updatedAt : 0;
+                    
+                    if (localUpdatedAt > cloudUpdatedAt) {
+                        Log.d(TAG, "SYNC DEBUG: Using local version (newer updatedAt) for " + localTask.description + 
+                              " (Local updatedAt: " + localUpdatedAt + ", Cloud updatedAt: " + cloudUpdatedAt + ")");
+                        tasksToUpdate.add(localTask);
+                    } else if (cloudUpdatedAt > localUpdatedAt) {
+                        Log.d(TAG, "SYNC DEBUG: Using cloud version (newer updatedAt) for " + cloudTask.description + 
+                              " (Local updatedAt: " + localUpdatedAt + ", Cloud updatedAt: " + cloudUpdatedAt + ")");
+                        tasksToUpdate.add(cloudTask);
                     } else {
-                        tasksToUpdate.add(cloudTask); // Prefer cloud version
+                        // Same timestamp, prefer local version to avoid overwriting recent changes
+                        Log.d(TAG, "SYNC DEBUG: Using local version (same updatedAt, prefer local) for " + localTask.description);
+                        tasksToUpdate.add(localTask);
                     }
                 } else {
                     // New task from cloud
+                    Log.d(TAG, "SYNC DEBUG: New task from cloud - " + cloudTask.description + 
+                          " (Cloud ID: " + cloudTask.firestoreDocumentId + ")");
                     tasksToInsert.add(cloudTask);
                 }
             }
@@ -258,12 +277,22 @@ public class SyncManager {
                 
                 if (!foundInCloud) {
                     // This is a new local task, upload it
+                    Log.d(TAG, "SYNC DEBUG: Uploading new local task - " + localTask.description + 
+                          " (Local ID: " + localTask.id + 
+                          ", updatedAt: " + localTask.updatedAt + 
+                          ", isCompleted: " + localTask.isCompleted + 
+                          ", dueDate: " + localTask.dueDate + 
+                          ", dayOfWeek: " + localTask.dayOfWeek + ")");
+                    
                     // Mark this task as being uploaded to prevent duplicate uploads
                     uploadedTaskIds.add(localTask.id);
                     
                     firestoreService.saveTask(localTask, new FirestoreService.FirestoreCallback() {
                         @Override
                         public void onSuccess(Object result) {
+                            Log.d(TAG, "SYNC DEBUG: Successfully uploaded local task - " + localTask.description + 
+                                  " (Local ID: " + localTask.id + 
+                                  ", Firestore ID: " + result + ")");
                             // Update the local task with the firestoreDocumentId on background thread
                             localTask.firestoreDocumentId = (String) result;
                             executorService.execute(() -> {
@@ -295,10 +324,22 @@ public class SyncManager {
                     long cloudUpdatedAt = cloudTask.updatedAt != null ? cloudTask.updatedAt : 0;
                     
                     if (localUpdatedAt > cloudUpdatedAt) {
+                        Log.d(TAG, "SYNC DEBUG: Uploading updated existing task - " + localTask.description + 
+                              " (Local ID: " + localTask.id + 
+                              ", Firestore ID: " + localTask.firestoreDocumentId + 
+                              ", Local updatedAt: " + localUpdatedAt + 
+                              ", Cloud updatedAt: " + cloudUpdatedAt + 
+                              ", Local isCompleted: " + localTask.isCompleted + 
+                              ", Cloud isCompleted: " + cloudTask.isCompleted + 
+                              ", Local dueDate: " + localTask.dueDate + 
+                              ", Cloud dueDate: " + cloudTask.dueDate + ")");
+                        
                         firestoreService.saveTask(localTask, new FirestoreService.FirestoreCallback() {
                             @Override
                             public void onSuccess(Object result) {
-                                Log.d(TAG, "Uploaded modified local task: " + localTask.description);
+                                Log.d(TAG, "SYNC DEBUG: Successfully updated existing task in cloud - " + localTask.description + 
+                                      " (Local ID: " + localTask.id + 
+                                      ", Firestore ID: " + result + ")");
                             }
 
                             @Override
@@ -306,6 +347,11 @@ public class SyncManager {
                                 Log.e(TAG, "Failed to upload modified local task: " + error);
                             }
                         });
+                    } else {
+                        Log.d(TAG, "SYNC DEBUG: Skipping upload of existing task (cloud is newer) - " + localTask.description + 
+                              " (Local ID: " + localTask.id + 
+                              ", Local updatedAt: " + localUpdatedAt + 
+                              ", Cloud updatedAt: " + cloudUpdatedAt + ")");
                     }
                 }
             }
