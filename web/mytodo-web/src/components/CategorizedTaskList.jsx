@@ -168,6 +168,23 @@ const CategorizedTaskList = ({
     return null;
   };
 
+  const formatCompletionDate = (completionDate) => {
+    if (!completionDate) return null;
+    
+    const isHebrew = language === 'he';
+    const date = new Date(completionDate);
+    
+    const dateOptions = { 
+      year: 'numeric', 
+      month: isHebrew ? '2-digit' : 'short', 
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    };
+    
+    return date.toLocaleDateString(isHebrew ? 'he-IL' : 'en-US', dateOptions);
+  };
+
   const getCategoryDisplayName = (categoryName) => {
     // Map internal category names to display names
     const categoryMap = {
@@ -377,6 +394,12 @@ const CategorizedTaskList = ({
                             {getReminderText(task) && (
                               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
                                 🔔 {getReminderText(task)}
+                              </Typography>
+                            )}
+
+                            {task.isCompleted && formatCompletionDate(task.completionDate) && (
+                              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 0.5 }}>
+                                ✅ {t('Completed')}: {formatCompletionDate(task.completionDate)}
                               </Typography>
                             )}
 

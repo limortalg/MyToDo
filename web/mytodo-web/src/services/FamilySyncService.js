@@ -209,14 +209,62 @@ export class FamilySyncService {
 
   /**
    * Enhanced task completion toggle that syncs with FamilySync
+   * Includes monthly task completion logic to align with Android app
    */
   async toggleTaskCompletionWithSync(taskId, isCompleted) {
     try {
-      // Update MyToDo task
-      await this.taskService.toggleTaskCompletion(taskId, isCompleted);
+      // Get current task data to check if it's a monthly recurring task
+      const currentTasks = await this.taskService.getTasks();
+      const currentTask = currentTasks.find(task => task.id === taskId);
       
-      // Sync with FamilySync if this is an exported task
-      await this.syncCompletionToFamilySync(taskId, isCompleted);
+      if (!currentTask) {
+        throw new Error(`Task with ID ${taskId} not found`);
+      }
+      
+      // Check if this is a recurring task being completed
+      const isMonthlyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Monthly';
+      const isWeeklyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Weekly';
+      
+      if (isCompleted && (isMonthlyRecurring || isWeeklyRecurring)) {
+        console.log('🔥 FAMILY SYNC SERVICE: Handling recurring task completion for:', currentTask.description, 'Type:', currentTask.recurrenceType);
+        
+        let newDueDate;
+        if (isMonthlyRecurring) {
+          // For monthly tasks, advance the due date to next month
+          newDueDate = this.getNextMonthDate(currentTask.dueDate);
+        } else if (isWeeklyRecurring) {
+          // For weekly tasks, advance the due date to next week
+          newDueDate = this.getNextWeekDate(currentTask.dueDate);
+        }
+        
+        // Update task with new due date and reset completion status
+        await this.taskService.updateTask(taskId, {
+          ...currentTask,
+          dueDate: newDueDate,
+          dayOfWeek: 'None', // Reset to waiting
+          isCompleted: false, // Reset for next occurrence
+          completionDate: null, // Clear completion date
+          updatedAt: Date.now()
+        });
+        
+        console.log('🔥 FAMILY SYNC SERVICE: Recurring task advanced:', {
+          taskDescription: currentTask.description,
+          recurrenceType: currentTask.recurrenceType,
+          originalDueDate: currentTask.dueDate,
+          newDueDate: newDueDate,
+          dayOfWeek: 'None'
+        });
+        
+        // Sync the completion with FamilySync (the task is marked as completed in FamilySync)
+        await this.syncCompletionToFamilySync(taskId, true);
+        
+      } else {
+        // Regular task completion (non-monthly or uncompleting)
+        await this.taskService.toggleTaskCompletion(taskId, isCompleted);
+        
+        // Sync with FamilySync if this is an exported task
+        await this.syncCompletionToFamilySync(taskId, isCompleted);
+      }
       
       return { success: true };
     } catch (error) {
@@ -226,6 +274,53 @@ export class FamilySyncService {
         error: error.message 
       };
     }
+  }
+  
+  /**
+   * Calculate the next month's date for monthly recurring tasks
+   */
+  getNextMonthDate(currentDueDate) {
+    if (!currentDueDate) {
+      // If no due date, set to next month from today
+      const nextMonth = new Date();
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+      return nextMonth.getTime();
+    }
+    
+    const currentDate = new Date(currentDueDate);
+    const nextMonth = new Date(currentDate);
+    
+    // Add one month
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+    
+    // Handle edge case where the day doesn't exist in next month (e.g., Jan 31 -> Feb 28/29)
+    if (nextMonth.getDate() !== currentDate.getDate()) {
+      // If the day changed, it means we went to a month with fewer days
+      // Set to the last day of the target month
+      nextMonth.setDate(0); // This gives us the last day of the previous month (which is our target month)
+    }
+    
+    return nextMonth.getTime();
+  }
+  
+  /**
+   * Calculate the next week's date for weekly recurring tasks
+   */
+  getNextWeekDate(currentDueDate) {
+    if (!currentDueDate) {
+      // If no due date, set to next week from today
+      const nextWeek = new Date();
+      nextWeek.setDate(nextWeek.getDate() + 7);
+      return nextWeek.getTime();
+    }
+    
+    const currentDate = new Date(currentDueDate);
+    const nextWeek = new Date(currentDate);
+    
+    // Add one week (7 days)
+    nextWeek.setDate(nextWeek.getDate() + 7);
+    
+    return nextWeek.getTime();
   }
 }
 

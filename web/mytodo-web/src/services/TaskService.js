@@ -325,7 +325,10 @@ export class TaskService {
       
       querySnapshot.forEach((doc) => {
         const task = Task.fromFirestore(doc.id, doc.data());
-        tasks.push(task);
+        // Only include non-deleted tasks
+        if (!task.isDeleted()) {
+          tasks.push(task);
+        }
       });
       
       return tasks;
@@ -350,7 +353,8 @@ export class TaskService {
       
       querySnapshot.forEach((doc) => {
         const task = Task.fromFirestore(doc.id, doc.data());
-        if (task.description.toLowerCase().includes(searchTerm.toLowerCase())) {
+        // Only include non-deleted tasks that match search term
+        if (!task.isDeleted() && task.description.toLowerCase().includes(searchTerm.toLowerCase())) {
           tasks.push(task);
         }
       });

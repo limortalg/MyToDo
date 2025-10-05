@@ -259,8 +259,9 @@ public class SyncManager {
             // Upload local changes that aren't in cloud
             final Set<Integer> uploadedTaskIds = new HashSet<>();
             for (limor.tal.mytodo.Task localTask : localChanges) {
-                // Skip soft-deleted tasks
-                if (localTask.deletedAt != null && localTask.deletedAt > 0) {
+                // Skip soft-deleted tasks that are already synced to cloud
+                if (localTask.deletedAt != null && localTask.deletedAt > 0 && 
+                    localTask.firestoreDocumentId != null && cloudMap.containsKey(localTask.firestoreDocumentId)) {
                     continue;
                 }
                 
@@ -313,8 +314,33 @@ public class SyncManager {
             // Upload local changes for existing tasks that have been modified
             for (limor.tal.mytodo.Task localTask : localChanges) {
                 if (localTask.firestoreDocumentId != null && cloudMap.containsKey(localTask.firestoreDocumentId)) {
-                    // Skip soft-deleted tasks
+                    // Handle soft-deleted tasks
                     if (localTask.deletedAt != null && localTask.deletedAt > 0) {
+                        // Check if cloud task is not yet soft-deleted
+                        limor.tal.mytodo.Task cloudTask = cloudMap.get(localTask.firestoreDocumentId);
+                        long cloudDeletedAt = cloudTask.deletedAt != null ? cloudTask.deletedAt : 0;
+                        
+                        if (cloudDeletedAt == 0) {
+                            // Cloud task is not soft-deleted yet, sync the deletion
+                            Log.d(TAG, "SYNC DEBUG: Syncing soft deletion to cloud - " + localTask.description + 
+                                  " (Local ID: " + localTask.id + 
+                                  ", Firestore ID: " + localTask.firestoreDocumentId + 
+                                  ", deletedAt: " + localTask.deletedAt + ")");
+                            
+                            firestoreService.softDeleteTask(localTask.firestoreDocumentId, new FirestoreService.FirestoreCallback() {
+                                @Override
+                                public void onSuccess(Object result) {
+                                    Log.d(TAG, "SYNC DEBUG: Successfully synced soft deletion to cloud - " + localTask.description);
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e(TAG, "Failed to sync soft deletion to cloud: " + error);
+                                }
+                            });
+                        } else {
+                            Log.d(TAG, "SYNC DEBUG: Skipping soft-deleted task (already deleted in cloud) - " + localTask.description);
+                        }
                         continue;
                     }
                     
