@@ -1,4 +1,6 @@
 // Task categorization logic that matches the Android app
+import { TaskConstants } from '../constants/TaskConstants';
+
 export class TaskCategorizer {
   constructor(t) {
     this.t = t || ((key) => key); // Fallback to key if no translation function
@@ -20,19 +22,26 @@ export class TaskCategorizer {
   }
 
   // Map English day name to current language for display (simplified for English-only storage)
-  mapDayOfWeekToCurrentLanguage(dayOfWeek, daysOfWeek) {
+  mapDayOfWeekToCurrentLanguage(dayOfWeek, daysOfWeek, task = null) {
     // All database values are now stored in English, so we just need to map to display language
-    const englishDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    const englishDays = [
+      TaskConstants.DAY_SUNDAY, TaskConstants.DAY_MONDAY, TaskConstants.DAY_TUESDAY, 
+      TaskConstants.DAY_WEDNESDAY, TaskConstants.DAY_THURSDAY, TaskConstants.DAY_FRIDAY, 
+      TaskConstants.DAY_SATURDAY
+    ];
     
     // Handle special categories first
-    if (dayOfWeek === 'Waiting') {
+    if (dayOfWeek === TaskConstants.CATEGORY_WAITING) {
       return this.t('Waiting');
     }
-    if (dayOfWeek === 'Immediate') {
+    if (dayOfWeek === TaskConstants.DAY_IMMEDIATE) {
       return this.t('Immediate');
     }
-    if (dayOfWeek === 'Soon') {
+    if (dayOfWeek === TaskConstants.DAY_SOON) {
       return this.t('Soon');
+    }
+    if (dayOfWeek === TaskConstants.DAY_NONE) {
+      return this.t('Waiting');
     }
     
     // Find the index of the stored English day name
@@ -42,7 +51,7 @@ export class TaskCategorizer {
     }
     
     // If not found, return the original (fallback)
-    console.warn('Could not map dayOfWeek:', dayOfWeek);
+    console.warn('Could not map dayOfWeek:', dayOfWeek, 'for task:', task?.description || 'unknown task');
     return dayOfWeek;
   }
 
@@ -80,7 +89,7 @@ export class TaskCategorizer {
         category = immediateOption;
       } else {
         // Always map dayOfWeek to current language first
-        const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
+        const mappedDayOfWeek = this.mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek, task);
         
         if (mappedDayOfWeek === waitingCategory) {
           // Task has "Waiting" as dayOfWeek, check due date or assign to Waiting (matches Android logic)
@@ -109,9 +118,11 @@ export class TaskCategorizer {
           category = mappedDayOfWeek;
         }
       }
-    } else if (task.dayOfWeek === null) {
+    } else if (task.dayOfWeek === null || task.dayOfWeek === TaskConstants.DAY_NONE) {
       // Task has null dayOfWeek (Waiting category) - check due date or assign to Waiting
+      
       if (task.dueDate != null) {
+        
         if (task.dueDate < todayMillis) {
           category = immediateOption;
         } else if (task.dueDate >= todayMillis && task.dueDate < nextWeekMillis) {
@@ -120,6 +131,7 @@ export class TaskCategorizer {
           const dayOfWeek = dueDate.getDay(); // 0=Sunday, ..., 6=Saturday
           const dayIndex = dayOfWeek + 3; // 0->3, 1->4, ..., 6->9 (matches Android mapping)
           category = daysOfWeek[dayIndex];
+          
         } else {
           // Future due date beyond next week - assign to Waiting
           category = waitingCategory;
@@ -149,6 +161,7 @@ export class TaskCategorizer {
 
 
     // Add task to appropriate category
+    
     if (category === immediateOption) {
       immediateTasks.push(task);
     } else if (category === soonOption) {
@@ -183,6 +196,7 @@ export class TaskCategorizer {
     const nextWeek = new Date(today);
     nextWeek.setDate(today.getDate() + 7);
     const nextWeekMillis = nextWeek.getTime();
+    
 
     // Get current day and create day indices array
     const todayDayOfWeek = today.getDay(); // 0=Sunday, ..., 6=Saturday

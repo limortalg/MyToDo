@@ -32,6 +32,7 @@ registerLocale('he', he);
 registerLocale('en', en);
 import { Task } from '../models/Task';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TaskConstants } from '../constants/TaskConstants';
 
 const TaskDialog = ({ open, onClose, onSave, task }) => {
   const { t, language, isRTL } = useLanguage();
@@ -41,9 +42,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
     description: '',
     dueDate: null,
     dueTime: null,
-    whenToPerform: 'Waiting',
+    whenToPerform: TaskConstants.DAY_NONE,
     isRecurring: false,
-    recurrenceType: 'Daily',
+    recurrenceType: TaskConstants.RECURRENCE_DAILY,
     priority: 0,
     reminderOffset: null, // null = "No reminder"
     reminderDays: null
@@ -52,24 +53,24 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
   const [errors, setErrors] = useState({});
 
   const whenToPerformOptions = [
-    { value: 'Waiting', label: t('Waiting') },
-    { value: 'Immediate', label: t('Immediate') },
-    { value: 'Soon', label: t('Soon') },
-    { value: 'Sunday', label: t('Sunday') },
-    { value: 'Monday', label: t('Monday') },
-    { value: 'Tuesday', label: t('Tuesday') },
-    { value: 'Wednesday', label: t('Wednesday') },
-    { value: 'Thursday', label: t('Thursday') },
-    { value: 'Friday', label: t('Friday') },
-    { value: 'Saturday', label: t('Saturday') }
+    { value: TaskConstants.DAY_NONE, label: t('Waiting') },
+    { value: TaskConstants.DAY_IMMEDIATE, label: t('Immediate') },
+    { value: TaskConstants.DAY_SOON, label: t('Soon') },
+    { value: TaskConstants.DAY_SUNDAY, label: t('Sunday') },
+    { value: TaskConstants.DAY_MONDAY, label: t('Monday') },
+    { value: TaskConstants.DAY_TUESDAY, label: t('Tuesday') },
+    { value: TaskConstants.DAY_WEDNESDAY, label: t('Wednesday') },
+    { value: TaskConstants.DAY_THURSDAY, label: t('Thursday') },
+    { value: TaskConstants.DAY_FRIDAY, label: t('Friday') },
+    { value: TaskConstants.DAY_SATURDAY, label: t('Saturday') }
   ];
 
   const recurrenceTypes = [
-    { value: 'Daily', label: t('Daily') },
-    { value: 'Weekly', label: t('Weekly') },
-    { value: 'Biweekly', label: t('Biweekly') },
-    { value: 'Monthly', label: t('Monthly') },
-    { value: 'Yearly', label: t('Yearly') }
+    { value: TaskConstants.RECURRENCE_DAILY, label: t('Daily') },
+    { value: TaskConstants.RECURRENCE_WEEKLY, label: t('Weekly') },
+    { value: TaskConstants.RECURRENCE_BIWEEKLY, label: t('Biweekly') },
+    { value: TaskConstants.RECURRENCE_MONTHLY, label: t('Monthly') },
+    { value: TaskConstants.RECURRENCE_YEARLY, label: t('Yearly') }
   ];
 
   const reminderOffsets = [
@@ -86,7 +87,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         description: task.description || '',
         dueDate: task.dueDate ? new Date(task.dueDate) : null,
         dueTime: task.dueTime ? convertMillisecondsSinceMidnightToTime(task.dueTime) : null,
-        whenToPerform: task.dayOfWeek || 'Waiting',
+        whenToPerform: task.dayOfWeek || TaskConstants.DAY_NONE,
         isRecurring: task.isRecurring || false,
         recurrenceType: task.recurrenceType || '',
         priority: task.priority || 0,
@@ -98,9 +99,9 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         description: '',
         dueDate: null,
         dueTime: null,
-        whenToPerform: 'Waiting',
+        whenToPerform: TaskConstants.DAY_NONE,
         isRecurring: false,
-        recurrenceType: 'Daily',
+        recurrenceType: TaskConstants.RECURRENCE_DAILY,
         priority: 0,
         reminderOffset: null, // null = "No reminder"
         reminderDays: null
@@ -158,7 +159,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       description: formData.description.trim(),
       dueDate: formData.dueDate ? formData.dueDate.getTime() : null,
       dueTime: formData.dueTime ? calculateMillisecondsSinceMidnight(formData.dueTime) : null,
-      dayOfWeek: formData.whenToPerform === 'Waiting' ? null : formData.whenToPerform,
+      dayOfWeek: formData.whenToPerform,
       isRecurring: formData.isRecurring,
       recurrenceType: formData.isRecurring ? formData.recurrenceType : null,
       priority: parseInt(formData.priority),

@@ -404,32 +404,7 @@ const CategorizedTaskList = ({
                             )}
 
                             {/* FamilySync source indicator */}
-                            {(() => {
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - Task being rendered:', task.description);
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - sourceApp:', task.sourceApp);
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - sourceTaskId:', task.sourceTaskId);
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - task object type:', typeof task);
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - task constructor:', task.constructor.name);
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - has isFromFamilySync method:', typeof task.isFromFamilySync);
-                              
-                              // Try to call the method if it exists
-                              let isFromFS = false;
-                              if (task.isFromFamilySync && typeof task.isFromFamilySync === 'function') {
-                                isFromFS = task.isFromFamilySync();
-                              } else {
-                                // Fallback: manual check
-                                isFromFS = task.sourceApp === 'familysync' && task.sourceTaskId;
-                                console.log('🔥 CATEGORIZED TASKLIST DEBUG - Using fallback check:', isFromFS);
-                              }
-                              
-                              console.log('🔥 CATEGORIZED TASKLIST DEBUG - isFromFamilySync result:', isFromFS);
-                              
-                              if (isFromFS) {
-                                console.log('🎉 FAMILYSYNC TASK DETECTED IN CATEGORIZED LIST:', task.description);
-                              }
-                              
-                              return isFromFS;
-                            })() && (
+                            {task.sourceApp === 'familysync' && task.sourceTaskId && (
                               <Box sx={{ mt: 1 }}>
                                 <Tooltip title="Imported from FamilySync">
                                   <Chip 

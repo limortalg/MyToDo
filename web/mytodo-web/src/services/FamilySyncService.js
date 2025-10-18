@@ -224,8 +224,9 @@ export class FamilySyncService {
       // Check if this is a recurring task being completed
       const isMonthlyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Monthly';
       const isWeeklyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Weekly';
+      const isYearlyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Yearly';
       
-      if (isCompleted && (isMonthlyRecurring || isWeeklyRecurring)) {
+      if (isCompleted && (isMonthlyRecurring || isWeeklyRecurring || isYearlyRecurring)) {
         console.log('🔥 FAMILY SYNC SERVICE: Handling recurring task completion for:', currentTask.description, 'Type:', currentTask.recurrenceType);
         
         let newDueDate;
@@ -235,6 +236,9 @@ export class FamilySyncService {
         } else if (isWeeklyRecurring) {
           // For weekly tasks, advance the due date to next week
           newDueDate = this.getNextWeekDate(currentTask.dueDate);
+        } else if (isYearlyRecurring) {
+          // For yearly tasks, advance the due date to next year
+          newDueDate = this.getNextYearDate(currentTask.dueDate);
         }
         
         // Update task with new due date and reset completion status
@@ -321,6 +325,33 @@ export class FamilySyncService {
     nextWeek.setDate(nextWeek.getDate() + 7);
     
     return nextWeek.getTime();
+  }
+  
+  /**
+   * Calculate the next year's date for yearly recurring tasks
+   */
+  getNextYearDate(currentDueDate) {
+    if (!currentDueDate) {
+      // If no due date, set to next year from today
+      const nextYear = new Date();
+      nextYear.setFullYear(nextYear.getFullYear() + 1);
+      return nextYear.getTime();
+    }
+    
+    const currentDate = new Date(currentDueDate);
+    const nextYear = new Date(currentDate);
+    
+    // Add one year
+    nextYear.setFullYear(nextYear.getFullYear() + 1);
+    
+    // Handle edge case where the day doesn't exist in next year (e.g., Feb 29 in leap year)
+    if (nextYear.getDate() !== currentDate.getDate()) {
+      // If the day changed, it means we went to a year where that day doesn't exist
+      // Set to the last day of the target month
+      nextYear.setDate(0); // This gives us the last day of the previous month (which is our target month)
+    }
+    
+    return nextYear.getTime();
   }
 }
 

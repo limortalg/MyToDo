@@ -45,14 +45,11 @@ const Dashboard = ({ taskService, user }) => {
   // Subscribe to FamilySync changes for exported tasks
   useEffect(() => {
     if (tasks.length > 0) {
-      console.log('Setting up FamilySync subscriptions for', tasks.length, 'tasks');
       
       // Subscribe to changes for each exported task
       tasks.forEach(task => {
         if (task.sourceApp === 'familysync' && task.sourceTaskId) {
-          console.log('Subscribing to FamilySync changes for task:', task.description, 'sourceTaskId:', task.sourceTaskId);
           familySyncService.subscribeToFamilySyncChanges(task.id, (changeData) => {
-            console.log('FamilySync change detected for task:', task.description, changeData);
             // Reload tasks to get the updated completion status
             loadTasks();
           });

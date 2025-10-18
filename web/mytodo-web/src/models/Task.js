@@ -1,11 +1,13 @@
 // Task model that matches the Android app's Task class
+import { TaskConstants } from '../constants/TaskConstants';
+
 export class Task {
   constructor(data = {}) {
     this.id = data.id || null;
     this.description = data.description || '';
     this.dueDate = data.dueDate || null; // Timestamp
     this.dueTime = data.dueTime || null; // Milliseconds since midnight
-    this.dayOfWeek = data.dayOfWeek || null;
+    this.dayOfWeek = data.dayOfWeek || TaskConstants.DAY_NONE;
     this.isRecurring = data.isRecurring || false;
     this.recurrenceType = data.recurrenceType || null;
     this.isCompleted = data.isCompleted || false;
@@ -116,14 +118,7 @@ export class Task {
 
   // Check if task is imported from FamilySync
   isFromFamilySync() {
-    const isFromFS = this.sourceApp === 'familysync' && this.sourceTaskId;
-    console.log('Task.isFromFamilySync:', {
-      taskDescription: this.description,
-      sourceApp: this.sourceApp,
-      sourceTaskId: this.sourceTaskId,
-      isFromFamilySync: isFromFS
-    });
-    return isFromFS;
+    return this.sourceApp === 'familysync' && this.sourceTaskId;
   }
 
   // Check if task is deleted
