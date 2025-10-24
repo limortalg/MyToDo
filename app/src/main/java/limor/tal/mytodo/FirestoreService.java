@@ -143,26 +143,29 @@ public class FirestoreService {
 
     // Soft delete a task from Firestore (set deletedAt timestamp)
     public void softDeleteTask(String documentId, FirestoreCallback callback) {
+        Log.d(TAG, "SOFT DELETE DEBUG: " + documentId);
+        
         if (auth.getCurrentUser() == null) {
             callback.onError("User not authenticated");
             return;
         }
 
         long deletedAt = System.currentTimeMillis();
+        
         db.collection(COLLECTION_TASKS)
                 .document(documentId)
                 .update("deletedAt", deletedAt, "updatedAt", deletedAt)
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "Task soft deleted successfully (deletedAt: " + deletedAt + ")");
+                        Log.d(TAG, "SOFT DELETE DEBUG: Success - " + documentId);
                         callback.onSuccess(null);
                     }
                 })
                 .addOnFailureListener(new OnFailureListener() {
                     @Override
                     public void onFailure(Exception e) {
-                        Log.e(TAG, "Error soft deleting task", e);
+                        Log.e(TAG, "SOFT DELETE DEBUG: Failed - " + documentId + " - " + e.getMessage());
                         callback.onError("Failed to soft delete task: " + e.getMessage());
                     }
                 });

@@ -24,16 +24,19 @@ public interface TaskDao {
     @Delete
     void delete(Task task);
 
-    @Query("SELECT * FROM tasks")
+    @Query("SELECT * FROM tasks WHERE deletedAt IS NULL")
     LiveData<List<Task>> getAllTasks();
 
-    @Query("SELECT * FROM tasks")
+    @Query("SELECT * FROM tasks WHERE deletedAt IS NULL")
     List<Task> getAllTasksSync();
 
-    @Query("SELECT * FROM tasks WHERE id = :taskId")
+    @Query("SELECT * FROM tasks")
+    List<Task> getAllTasksIncludingDeletedSync();
+
+    @Query("SELECT * FROM tasks WHERE id = :taskId AND deletedAt IS NULL")
     Task getTaskById(int taskId);
 
-    @Query("SELECT * FROM tasks WHERE completionDate > :timestamp")
+    @Query("SELECT * FROM tasks WHERE completionDate > :timestamp AND deletedAt IS NULL")
     List<Task> getTasksModifiedSince(long timestamp);
 
     @Query("DELETE FROM tasks")

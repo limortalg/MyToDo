@@ -212,7 +212,6 @@ public class TaskRemoteViewsFactory implements RemoteViewsService.RemoteViewsFac
             
             // 1. Check for tasks with a specific day of the week (now always in English)
             if (task.dayOfWeek != null && !task.dayOfWeek.isEmpty()) {
-                Log.d(TAG, "isTaskForToday: Task dayOfWeek: " + task.dayOfWeek + ", Today: " + todayEnglishDay);
                 if (task.dayOfWeek.equals(todayEnglishDay)) {
                     Log.d(TAG, "isTaskForToday: Task matches current day of week: " + task.description);
                     return true;

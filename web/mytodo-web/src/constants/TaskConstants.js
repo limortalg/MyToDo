@@ -86,3 +86,4 @@ export const TaskConstants = {
         return this.ALL_DAYS.includes(dayName);
     }
 };
+

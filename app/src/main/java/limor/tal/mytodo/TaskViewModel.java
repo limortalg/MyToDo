@@ -105,6 +105,10 @@ public class TaskViewModel extends AndroidViewModel {
     public void delete(Task task) {
         repository.delete(task);
     }
+    
+    public void delete(Task task, boolean hardDelete) {
+        repository.delete(task, hardDelete);
+    }
 
     public void updateTaskOrder(List<Task> tasks) {
         long currentTime = System.currentTimeMillis();
@@ -150,9 +154,6 @@ public class TaskViewModel extends AndroidViewModel {
         String waitingCategory = getApplication().getString(R.string.category_waiting); // "Waiting" or "בהמתנה"
         String completedCategory = getApplication().getString(R.string.category_completed); // "Completed" or "הושלם"
         
-        Log.d("MyToDo", "processTasksByCategory: Using language resources - noneOption: " + noneOption + 
-                ", immediateOption: " + immediateOption + ", soonOption: " + soonOption + 
-                ", waitingCategory: " + waitingCategory + ", completedCategory: " + completedCategory);
 
         // Define category order: Current day (with immediate tasks), Next 6 days, Soon, Waiting
         // NOTE: Immediate tasks will now be merged into the current day category
@@ -205,7 +206,6 @@ public class TaskViewModel extends AndroidViewModel {
         boolean hasActiveSearch = !query.isEmpty();
         boolean includeCompletedTasks = includeCompleted.getValue() != null ? includeCompleted.getValue() : false;
         
-        Log.d("MyToDo", "processTasksByCategory: Search query: '" + query + "', includeCompleted: " + includeCompletedTasks);
 
         // Get current date and next week's date for categorization
         Calendar todayCal = Calendar.getInstance();
@@ -251,7 +251,6 @@ public class TaskViewModel extends AndroidViewModel {
             
             // Always route non-recurring completed tasks to Completed category list
             if (!isRecurring && task.isCompleted) {
-                Log.d("MyToDo", "processTasksByCategory: Non-recurring completed task " + task.description + " (id: " + task.id + ") routed to completed category, completionDate: " + task.completionDate);
                 completedTasks.add(task);
                 continue;
             }
@@ -285,6 +284,12 @@ public class TaskViewModel extends AndroidViewModel {
             
             // For daily recurring tasks, create a copy for each day with appropriate completion state
             if (isDailyRecurring) {
+                // Skip soft-deleted daily recurring tasks
+                if (task.deletedAt != null && task.deletedAt > 0) {
+                    Log.d("MyToDo", "processTasksByCategory: Skipping soft-deleted daily recurring task: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+                    continue;
+                }
+                
                 // Add one copy to each day category
                 for (int i = 0; i < 7; i++) {
                     Task taskCopy = new Task(task.description, task.dueDate, task.dayOfWeek, 
@@ -293,6 +298,10 @@ public class TaskViewModel extends AndroidViewModel {
                     taskCopy.dueTime = task.dueTime;
                     taskCopy.reminderOffset = task.reminderOffset;
                     taskCopy.completionDate = task.completionDate;
+                    taskCopy.firestoreDocumentId = task.firestoreDocumentId; // CRITICAL: Copy firestoreDocumentId for sync
+                    taskCopy.createdAt = task.createdAt;
+                    taskCopy.updatedAt = task.updatedAt;
+                    taskCopy.deletedAt = task.deletedAt;
                     
                     // For daily recurring tasks, only show as completed for today
                     // Future days should show as not completed since they haven't happened yet
@@ -324,11 +333,16 @@ public class TaskViewModel extends AndroidViewModel {
                     // Add directly to the specific day category
                     dayTasks.get(i).add(taskCopy);
                     String dayName = daysOfWeek[dayIndices[i]];
-                    Log.d("MyToDo", "Daily recurring task added to " + dayName + " (index " + i + "): " + taskCopy.description + ", isCompleted: " + taskCopy.isCompleted);
                 }
                 Log.d("MyToDo", "Daily recurring task: " + task.description + " added to all day categories");
                 Log.d("MyToDo", "Day tasks sizes after adding daily task: " + Arrays.toString(dayTasks.stream().mapToInt(List::size).toArray()));
             } else if (isRecurring) {
+                // Skip soft-deleted recurring tasks
+                if (task.deletedAt != null && task.deletedAt > 0) {
+                    Log.d("MyToDo", "processTasksByCategory: Skipping soft-deleted recurring task: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+                    continue;
+                }
+                
                 // For weekly, monthly recurring tasks - process them directly without creating copies
                 // The completion logic in MainActivity now handles due date progression
                 processSingleTask(task, immediateTasks, soonTasks, waitingTasks, completedTasks, dayTasks, 
@@ -580,7 +594,6 @@ public class TaskViewModel extends AndroidViewModel {
         } else if (task.dayOfWeek != null) {
             // Task dayOfWeek is now always stored in English, map to current language for display
             String mappedDayOfWeek = mapDayOfWeekToCurrentLanguage(task.dayOfWeek, daysOfWeek);
-            Log.d("MyToDo", "Task dayOfWeek: " + task.dayOfWeek + " mapped to: " + mappedDayOfWeek);
             
             if (TaskConstants.DAY_NONE.equals(task.dayOfWeek)) {
                 // Task has "waiting" status - prioritize due date for categorization
@@ -657,23 +670,18 @@ public class TaskViewModel extends AndroidViewModel {
         
         if (category.equals(immediateOption)) {
             immediateTasks.add(task);
-            Log.d("MyToDo", "Task added to Immediate: " + task.description);
         } else if (category.equals(soonOption)) {
             soonTasks.add(task);
-            Log.d("MyToDo", "Task added to Soon: " + task.description);
         } else if (category.equals(waitingCategory)) {
             waitingTasks.add(task);
-            Log.d("MyToDo", "Task added to Waiting: " + task.description);
         } else if (category.equals(completedCategory)) {
             completedTasks.add(task);
-            Log.d("MyToDo", "Task added to Completed: " + task.description);
         } else {
             // Regular task - add to specific day category
             boolean added = false;
             for (int i = 0; i < dayIndices.length; i++) {
                 if (category.equals(daysOfWeek[dayIndices[i]])) {
                     dayTasks.get(i).add(task);
-                    Log.d("MyToDo", "Task added to " + category + " (index " + i + "): " + task.description);
                     added = true;
                     break;
                 }

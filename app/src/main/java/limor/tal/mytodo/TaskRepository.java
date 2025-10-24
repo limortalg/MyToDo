@@ -76,10 +76,23 @@ public class TaskRepository {
     }
 
     public void delete(Task task) {
+        delete(task, false); // Default to soft delete for backward compatibility
+    }
+    
+    public void delete(Task task, boolean hardDelete) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            Log.d("MyToDo", "Deleting task: " + task.description);
-            taskDao.delete(task);
-            Log.d("MyToDo", "Task deleted successfully: " + task.description);
+            if (hardDelete) {
+                Log.d("MyToDo", "Hard deleting task: " + task.description);
+                taskDao.delete(task);
+                Log.d("MyToDo", "Task hard deleted successfully: " + task.description);
+            } else {
+                Log.d("MyToDo", "Soft deleting task: " + task.description);
+                // Perform soft delete by setting deletedAt timestamp
+                task.deletedAt = System.currentTimeMillis();
+                task.updatedAt = System.currentTimeMillis();
+                taskDao.update(task);
+                Log.d("MyToDo", "Task soft deleted successfully: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+            }
         });
     }
 

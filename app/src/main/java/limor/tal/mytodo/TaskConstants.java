@@ -21,7 +21,9 @@ public class TaskConstants {
     // Recurrence type constants (always stored in English)
     public static final String RECURRENCE_DAILY = "Daily";
     public static final String RECURRENCE_WEEKLY = "Weekly";
+    public static final String RECURRENCE_BIWEEKLY = "Biweekly";
     public static final String RECURRENCE_MONTHLY = "Monthly";
+    public static final String RECURRENCE_YEARLY = "Yearly";
     
     // Category constants (always stored in English)
     public static final String CATEGORY_WAITING = "Waiting";
@@ -45,7 +47,9 @@ public class TaskConstants {
     public static final String[] ALL_RECURRENCE_TYPES = {
         RECURRENCE_DAILY,
         RECURRENCE_WEEKLY,
-        RECURRENCE_MONTHLY
+        RECURRENCE_BIWEEKLY,
+        RECURRENCE_MONTHLY,
+        RECURRENCE_YEARLY
     };
     
     /**

@@ -69,8 +69,12 @@ public class TaskTranslationUtils {
                     return recurrenceTypes[0]; // "יומי" or "Daily"
                 case TaskConstants.RECURRENCE_WEEKLY:
                     return recurrenceTypes[1]; // "שבועי" or "Weekly"
+                case TaskConstants.RECURRENCE_BIWEEKLY:
+                    return recurrenceTypes[2]; // "דו-שבועי" or "Biweekly"
                 case TaskConstants.RECURRENCE_MONTHLY:
-                    return recurrenceTypes[2]; // "חודשי" or "Monthly"
+                    return recurrenceTypes[3]; // "חודשי" or "Monthly"
+                case TaskConstants.RECURRENCE_YEARLY:
+                    return recurrenceTypes[4]; // "שנתי" or "Yearly"
                 default:
                     Log.w(TAG, "Unknown English recurrence type: " + englishRecurrenceType);
                     return englishRecurrenceType; // Return as-is if unknown
@@ -158,8 +162,14 @@ public class TaskTranslationUtils {
                 return TaskConstants.RECURRENCE_DAILY;
             case "שבועי":
                 return TaskConstants.RECURRENCE_WEEKLY;
+            case "דו-שבועי":
+            case "דו שבועי":
+            case "כל שבועיים":
+                return TaskConstants.RECURRENCE_BIWEEKLY;
             case "חודשי":
                 return TaskConstants.RECURRENCE_MONTHLY;
+            case "שנתי":
+                return TaskConstants.RECURRENCE_YEARLY;
             default:
                 // If it's already English or unknown, return as-is
                 for (String type : TaskConstants.ALL_RECURRENCE_TYPES) {

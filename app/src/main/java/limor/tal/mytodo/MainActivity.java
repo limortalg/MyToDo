@@ -448,6 +448,18 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.completionDate = null;
                             Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Weekly task completed and moved to next week: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
+                        } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(selectedTask.recurrenceType)) {
+                            // For yearly tasks, update due date to next year and reset to waiting
+                            Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Calendar calendar = Calendar.getInstance();
+                            calendar.setTimeInMillis(selectedTask.dueDate);
+                            calendar.add(Calendar.YEAR, 1);
+                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                            selectedTask.isCompleted = false;
+                            selectedTask.completionDate = null;
+                            Log.d("MyToDo", "COMPLETION DEBUG: After yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Log.d("MyToDo", "Complete button: Yearly task completed and moved to next year: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else {
                             // For non-recurring tasks, just toggle completion status
                             Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + selectedTask.id + ", isCompleted: " + selectedTask.isCompleted);
@@ -504,8 +516,8 @@ public class MainActivity extends AppCompatActivity {
         if (deleteButton != null) {
             deleteButton.setOnClickListener(v -> {
                 if (selectedTask != null) {
-                    // Show confirmation dialog before deleting
-                    showDeleteConfirmationDialog(selectedTask);
+                    // Refresh the selected task from database to get latest firestoreDocumentId
+                    refreshSelectedTaskFromDatabase(selectedTask.id);
                 } else {
                     Toast.makeText(this, getString(R.string.select_task_to_delete), Toast.LENGTH_SHORT).show();
                 }
@@ -1457,6 +1469,48 @@ public class MainActivity extends AppCompatActivity {
         // Log.d("MyToDo", "showTaskDialog: Dialog.show() called successfully");
     }
 
+    private void refreshSelectedTaskFromDatabase(int taskId) {
+        Log.d("MyToDo", "REFRESH DEBUG: Refreshing task from database - ID: " + taskId);
+        
+        // Get the latest task data from database
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                TaskDao taskDao = AppDatabase.getDatabase(this).taskDao();
+                List<Task> allTasks = taskDao.getAllTasksIncludingDeletedSync();
+                
+                Task refreshedTask = null;
+                for (Task task : allTasks) {
+                    if (task.id == taskId) {
+                        refreshedTask = task;
+                        break;
+                    }
+                }
+                
+                if (refreshedTask != null) {
+                    Log.d("MyToDo", "REFRESH DEBUG: Found refreshed task - " + refreshedTask.description + 
+                          " (ID: " + refreshedTask.id + ", FirestoreID: " + (refreshedTask.firestoreDocumentId != null ? refreshedTask.firestoreDocumentId : "NULL") + ")");
+                    
+                    // Update selectedTask on main thread
+                    final Task finalRefreshedTask = refreshedTask;
+                    runOnUiThread(() -> {
+                        selectedTask = finalRefreshedTask;
+                        showDeleteConfirmationDialog(selectedTask);
+                    });
+                } else {
+                    Log.e("MyToDo", "REFRESH DEBUG: Task not found in database - ID: " + taskId);
+                    runOnUiThread(() -> {
+                        Toast.makeText(this, "Task not found", Toast.LENGTH_SHORT).show();
+                    });
+                }
+            } catch (Exception e) {
+                Log.e("MyToDo", "REFRESH DEBUG: Error refreshing task from database", e);
+                runOnUiThread(() -> {
+                    Toast.makeText(this, "Error refreshing task", Toast.LENGTH_SHORT).show();
+                });
+            }
+        });
+    }
+
     private void showDeleteConfirmationDialog(Task task) {
         Log.d("MyToDo", "showDeleteConfirmationDialog: Showing confirmation for task: " + task.description + ", id: " + task.id);
         
@@ -1472,37 +1526,46 @@ public class MainActivity extends AppCompatActivity {
                        Log.d("MyToDo", "showDeleteConfirmationDialog: Cancelled reminder for task: " + task.description);
                    }
                    
-                   // Soft delete the task (set deletedAt timestamp)
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: About to soft delete task locally - " + task.description + " (ID: " + task.id + ")");              
+                   // Choose deletion strategy based on whether task was ever synced to cloud
+                   Log.d("MyToDo", "DELETE DEBUG: " + task.description + " - FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
                    
-                   // Set deletedAt timestamp for soft deletion
-                   task.deletedAt = System.currentTimeMillis();
-                   task.updatedAt = System.currentTimeMillis();
+                   if (task.firestoreDocumentId != null) {
+                       // Task was synced to cloud - use soft delete
+                       Log.d("MyToDo", "DELETE DEBUG: Soft delete - " + task.description);
+                       
+                       // Set deletedAt timestamp for soft deletion
+                       task.deletedAt = System.currentTimeMillis();
+                       task.updatedAt = System.currentTimeMillis();
+                       
+                       // Update the task in the database (soft delete)
+                       viewModel.update(task);
+                       
+                       // Sync the soft deletion to cloud if user is authenticated
+                       if (authService.isUserSignedIn()) {
+                           syncManager.forceSync(new SyncManager.SyncCallback() {
+                               @Override
+                               public void onSyncComplete(boolean success, String message) {                                                                        
+                                   Log.d("MyToDo", "DELETE DEBUG: Sync result - " + (success ? "SUCCESS" : "FAILED") + " - " + task.description);                                    
+                               }
+
+                               @Override
+                               public void onSyncProgress(String message) {
+                                   // Log.d("MyToDo", "DELETE DEBUG: Cloud sync progress: " + message);                                                                      
+                               }
+                           });
+                       } else {
+                           Log.d("MyToDo", "DELETE DEBUG: User not authenticated - " + task.description);                                             
+                       }
+                   } else {
+                       // Task was never synced to cloud - use hard delete
+                       Log.d("MyToDo", "DELETE DEBUG: Hard delete - " + task.description);
+                       
+                       // Hard delete the task from local database
+                       viewModel.delete(task, true); // Use hard delete
+                   }
                    
-                   // Update the task in the database (soft delete)
-                   viewModel.update(task);
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: Local soft deletion completed for task - " + task.description + " (deletedAt: " + task.deletedAt + ")");                                    
                    selectedTask = null;
                    updateButtonStates();
-
-                   // Sync the soft deletion to cloud if user is authenticated
-                   Log.d("MyToDo", "showDeleteConfirmationDialog: Checking cloud sync conditions - isUserSignedIn: " + authService.isUserSignedIn() + ", firestoreDocumentId: " + task.firestoreDocumentId);                                
-                   if (authService.isUserSignedIn()) {
-                       // Sync the soft deletion to cloud
-                       syncManager.forceSync(new SyncManager.SyncCallback() {
-                           @Override
-                           public void onSyncComplete(boolean success, String message) {                                                                        
-                               Log.d("MyToDo", "Task soft deletion sync: " + (success ? "Success" : "Failed") + " - " + message);                                    
-                           }
-
-                           @Override
-                           public void onSyncProgress(String message) {
-                               Log.d("MyToDo", "Task soft deletion sync progress: " + message);                                                                      
-                           }
-                       });
-                   } else {
-                       Log.d("MyToDo", "showDeleteConfirmationDialog: Not authenticated, skipping cloud sync");                                             
-                   }
                    
                    Toast.makeText(this, getString(R.string.task_deleted), Toast.LENGTH_SHORT).show();
                    Log.d("MyToDo", "showDeleteConfirmationDialog: Task deleted successfully: " + task.description);
@@ -1752,9 +1815,12 @@ public class MainActivity extends AppCompatActivity {
             else if (v == weekday7Button && weekday7Button.isEnabled()) newDay = weekday7Button.getText().toString();
             
             if (newDay != null) {
-                task.dayOfWeek = newDay;
+                // Convert Hebrew day name to English before saving to database
+                String englishDayOfWeek = TaskTranslationUtils.convertHebrewToEnglishDayName(newDay);
+                Log.d("MyToDo", "showMoveTaskDialog: Converting Hebrew day '" + newDay + "' to English: '" + englishDayOfWeek + "'");
+                task.dayOfWeek = englishDayOfWeek;
                 viewModel.update(task);
-                Log.d("MyToDo", "showMoveTaskDialog: Task moved to day: " + newDay + ", id: " + task.id);
+                Log.d("MyToDo", "showMoveTaskDialog: Task moved to day: " + englishDayOfWeek + ", id: " + task.id);
                 
                 // Sync task move to cloud if user is authenticated
                 if (authService.isUserSignedIn()) {
@@ -2370,6 +2436,18 @@ public class MainActivity extends AppCompatActivity {
                     task.completionDate = null;
                     Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                    
                     Log.d("MyToDo", "onContextItemSelected: Weekly task completed and moved to next week: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                       
+                } else if (task.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(task.recurrenceType)) {                                                   
+                    // For yearly tasks, update due date to next year and reset to waiting                                                                      
+                    Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
+                    Calendar calendar = Calendar.getInstance();
+                    calendar.setTimeInMillis(task.dueDate);
+                    calendar.add(Calendar.YEAR, 1);
+                    task.dueDate = calendar.getTimeInMillis();
+                    task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                    task.isCompleted = false;
+                    task.completionDate = null;
+                    Log.d("MyToDo", "COMPLETION DEBUG: After yearly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                    
+                    Log.d("MyToDo", "onContextItemSelected: Yearly task completed and moved to next year: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                       
                 } else {
                     // For non-recurring tasks, just toggle completion status   
                     Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + task.id + ", isCompleted: " + task.isCompleted);              
