@@ -428,9 +428,15 @@ public class MainActivity extends AppCompatActivity {
                             // For monthly tasks, update due date to next month and reset to waiting
                             Log.d("MyToDo", "COMPLETION DEBUG: Before monthly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
-                            calendar.setTimeInMillis(selectedTask.dueDate);
-                            calendar.add(Calendar.MONTH, 1);
-                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            if (selectedTask.dueDate != null) {
+                                calendar.setTimeInMillis(selectedTask.dueDate);
+                                calendar.add(Calendar.MONTH, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            } else {
+                                // If no due date, set it to next month from today
+                                calendar.add(Calendar.MONTH, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            }
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
@@ -440,9 +446,15 @@ public class MainActivity extends AppCompatActivity {
                             // For weekly tasks, update due date to next week and reset to waiting
                             Log.d("MyToDo", "COMPLETION DEBUG: Before weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
-                            calendar.setTimeInMillis(selectedTask.dueDate);
-                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
-                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            if (selectedTask.dueDate != null) {
+                                calendar.setTimeInMillis(selectedTask.dueDate);
+                                calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            } else {
+                                // If no due date, set it to next week from today
+                                calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            }
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
@@ -452,9 +464,15 @@ public class MainActivity extends AppCompatActivity {
                             // For yearly tasks, update due date to next year and reset to waiting
                             Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
-                            calendar.setTimeInMillis(selectedTask.dueDate);
-                            calendar.add(Calendar.YEAR, 1);
-                            selectedTask.dueDate = calendar.getTimeInMillis();
+                            if (selectedTask.dueDate != null) {
+                                calendar.setTimeInMillis(selectedTask.dueDate);
+                                calendar.add(Calendar.YEAR, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            } else {
+                                // If no due date, set it to next year from today
+                                calendar.add(Calendar.YEAR, 1);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            }
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
@@ -1078,10 +1096,13 @@ public class MainActivity extends AppCompatActivity {
         recurrenceTypeSpinner.setVisibility(recurringCheckBox.isChecked() ? View.VISIBLE : View.GONE);
         if (task != null && task.recurrenceType != null) {
             try {
-                int rIdx = findIndex(recurrenceTypes, task.recurrenceType);
+                // Translate English recurrence type to localized version before searching
+                String translatedRecurrenceType = TaskTranslationUtils.translateRecurrenceType(this, task.recurrenceType);
+                int rIdx = findIndex(recurrenceTypes, translatedRecurrenceType);
                 if (rIdx >= 0 && rIdx < recurrenceTypes.length) {
                     recurrenceTypeSpinner.setSelection(rIdx);
                 } else {
+                    Log.w("MyToDo", "showTaskDialog: Could not find recurrence type '" + task.recurrenceType + "' (translated: '" + translatedRecurrenceType + "') in array, defaulting to first item");
                     recurrenceTypeSpinner.setSelection(0);
                 }
             } catch (Exception e) {
