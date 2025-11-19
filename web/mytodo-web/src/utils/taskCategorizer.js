@@ -261,15 +261,24 @@ export class TaskCategorizer {
             dayOfWeek: this.daysOfWeek[dayIndices[i]]
           };
           
-          // Only show as completed if this is today AND the task is completed
+          // Only show as completed if this copy represents today AND the completion happened today
           const currentDayOfWeek = today.getDay();
           const dayOfWeekForThisCopy = dayIndices[i] - 3; // Convert back to 0-6 range
-          
-          if (dayOfWeekForThisCopy === currentDayOfWeek && task.isCompleted) {
-            taskCopy.isCompleted = true;
-          } else {
-            taskCopy.isCompleted = false;
+
+          let isCompletedForThisDay = false;
+          if (task.isCompleted && task.completionDate != null) {
+            const completionDate = new Date(task.completionDate);
+            if (
+              completionDate.getFullYear() === today.getFullYear() &&
+              completionDate.getMonth() === today.getMonth() &&
+              completionDate.getDate() === today.getDate() &&
+              dayOfWeekForThisCopy === currentDayOfWeek
+            ) {
+              isCompletedForThisDay = true;
+            }
           }
+
+          taskCopy.isCompleted = isCompletedForThisDay;
           
           // Add directly to the specific day category
           dayTasks[i].push(taskCopy);

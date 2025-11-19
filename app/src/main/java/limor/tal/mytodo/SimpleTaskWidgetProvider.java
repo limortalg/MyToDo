@@ -12,6 +12,8 @@ import android.os.Looper;
 import android.util.Log;
 import android.widget.RemoteViews;
 
+import java.util.Calendar;
+
 /**
  * Widget provider for scrollable task list
  */
@@ -277,9 +279,80 @@ public class SimpleTaskWidgetProvider extends AppWidgetProvider {
                 Task task = taskDao.getTaskById(taskId);
                 
                 if (task != null) {
-                    Log.d(TAG, "completeTask: Found task: " + task.description + ", current completed status: " + task.isCompleted);
-                    task.isCompleted = true;
-                    task.completionDate = System.currentTimeMillis();
+                    Log.d(TAG, "completeTask: Found task: " + task.description + ", current completed status: " + task.isCompleted + ", recurrenceType: " + task.recurrenceType);
+                    
+                    // Handle recurring task completion
+                    if (task.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(task.recurrenceType)) {
+                        // For monthly tasks, update due date to next month and reset to waiting
+                        Log.d(TAG, "completeTask: Handling monthly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.MONTH, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.MONTH, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d(TAG, "completeTask: Monthly task completed and moved to next month: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(task.recurrenceType)) {
+                        // For weekly tasks, update due date to next week and reset to waiting
+                        Log.d(TAG, "completeTask: Handling weekly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d(TAG, "completeTask: Weekly task completed and moved to next week: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_BIWEEKLY.equals(task.recurrenceType)) {
+                        // For bi-weekly tasks, update due date to 2 weeks later and reset to waiting
+                        Log.d(TAG, "completeTask: Handling bi-weekly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d(TAG, "completeTask: Bi-weekly task completed and moved to 2 weeks later: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(task.recurrenceType)) {
+                        // For yearly tasks, update due date to next year and reset to waiting
+                        Log.d(TAG, "completeTask: Handling yearly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d(TAG, "completeTask: Yearly task completed and moved to next year: " + task.description + ", new due date: " + task.dueDate);
+                    } else {
+                        // For non-recurring tasks, mark as completed
+                        Log.d(TAG, "completeTask: Handling non-recurring task: " + task.description);
+                        task.isCompleted = true;
+                        task.completionDate = System.currentTimeMillis();
+                    }
+                    
                     taskDao.update(task);
                     Log.d(TAG, "completeTask: Task completed successfully: " + task.description);
                     

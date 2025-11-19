@@ -224,9 +224,10 @@ export class FamilySyncService {
       // Check if this is a recurring task being completed
       const isMonthlyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Monthly';
       const isWeeklyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Weekly';
+      const isBiweeklyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Biweekly';
       const isYearlyRecurring = currentTask.isRecurring && currentTask.recurrenceType === 'Yearly';
       
-      if (isCompleted && (isMonthlyRecurring || isWeeklyRecurring || isYearlyRecurring)) {
+      if (isCompleted && (isMonthlyRecurring || isWeeklyRecurring || isBiweeklyRecurring || isYearlyRecurring)) {
         console.log('🔥 FAMILY SYNC SERVICE: Handling recurring task completion for:', currentTask.description, 'Type:', currentTask.recurrenceType);
         
         let newDueDate;
@@ -236,6 +237,9 @@ export class FamilySyncService {
         } else if (isWeeklyRecurring) {
           // For weekly tasks, advance the due date to next week
           newDueDate = this.getNextWeekDate(currentTask.dueDate);
+        } else if (isBiweeklyRecurring) {
+          // For bi-weekly tasks, advance the due date to 2 weeks later
+          newDueDate = this.getNextBiweekDate(currentTask.dueDate);
         } else if (isYearlyRecurring) {
           // For yearly tasks, advance the due date to next year
           newDueDate = this.getNextYearDate(currentTask.dueDate);
@@ -325,6 +329,26 @@ export class FamilySyncService {
     nextWeek.setDate(nextWeek.getDate() + 7);
     
     return nextWeek.getTime();
+  }
+  
+  /**
+   * Calculate the next bi-week's date for bi-weekly recurring tasks
+   */
+  getNextBiweekDate(currentDueDate) {
+    if (!currentDueDate) {
+      // If no due date, set to 2 weeks from today
+      const nextBiweek = new Date();
+      nextBiweek.setDate(nextBiweek.getDate() + 14);
+      return nextBiweek.getTime();
+    }
+    
+    const currentDate = new Date(currentDueDate);
+    const nextBiweek = new Date(currentDate);
+    
+    // Add two weeks (14 days)
+    nextBiweek.setDate(nextBiweek.getDate() + 14);
+    
+    return nextBiweek.getTime();
   }
   
   /**

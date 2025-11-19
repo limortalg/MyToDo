@@ -320,12 +320,26 @@ public class TaskViewModel extends AndroidViewModel {
                         case 9: dayOfWeekForThisCopy = Calendar.SATURDAY; break;  // Saturday
                     }
                     
-                    // Only show as completed if this is today AND the task is completed
-                    if (dayOfWeekForThisCopy == currentDayOfWeek && task.isCompleted) {
-                        taskCopy.isCompleted = true;
-                    } else {
-                        taskCopy.isCompleted = false;
+                    // For daily recurring tasks, only show as completed if it was completed today
+                    // This prevents tasks completed yesterday from showing as completed today
+                    boolean isCompletedForThisDay = false;
+                    if (task.isCompleted && task.completionDate != null) {
+                        Calendar completionCal = Calendar.getInstance();
+                        completionCal.setTimeInMillis(task.completionDate);
+                        
+                        Calendar nowCal = Calendar.getInstance();
+                        
+                        // Check if completion date is today
+                        if (completionCal.get(Calendar.DAY_OF_YEAR) == nowCal.get(Calendar.DAY_OF_YEAR) &&
+                            completionCal.get(Calendar.YEAR) == nowCal.get(Calendar.YEAR)) {
+                            // Only show as completed if this copy represents today
+                            if (dayOfWeekForThisCopy == currentDayOfWeek) {
+                                isCompletedForThisDay = true;
+                            }
+                        }
                     }
+                    
+                    taskCopy.isCompleted = isCompletedForThisDay;
                     
                     // Add a special field to track which day this copy represents
                     taskCopy.dayOfWeek = daysOfWeek[dayIndices[i]];

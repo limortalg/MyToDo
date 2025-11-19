@@ -220,6 +220,14 @@ public class SyncManager {
                 if (cloudTask.firestoreDocumentId != null && localMap.containsKey(cloudTask.firestoreDocumentId)) {
                     limor.tal.mytodo.Task localTask = localMap.get(cloudTask.firestoreDocumentId);
                     
+                    // If local task is soft-deleted, skip adding to tasksToUpdate
+                    // The deletion sync logic will handle syncing the deletion to cloud
+                    if (localTask.deletedAt != null && localTask.deletedAt > 0) {
+                        Log.d(TAG, "SYNC DEBUG: Local task is soft-deleted, skipping merge - " + localTask.description + 
+                              " (Local deletedAt: " + localTask.deletedAt + ", will sync deletion to cloud)");
+                        continue;
+                    }
+                    
                     Log.d(TAG, "SYNC DEBUG: Found matching task - " + cloudTask.description + 
                           " (Cloud ID: " + cloudTask.firestoreDocumentId + 
                           ", Local ID: " + localTask.id + 
@@ -414,12 +422,32 @@ public class SyncManager {
                 }
                 
                 if (localTaskToUpdate != null) {
+                    // Check if local task is soft-deleted
+                    boolean localIsDeleted = localTaskToUpdate.deletedAt != null && localTaskToUpdate.deletedAt > 0;
+                    boolean cloudIsDeleted = cloudTask.deletedAt != null && cloudTask.deletedAt > 0;
+                    
+                    // If local task is soft-deleted and cloud task is not, preserve the local deletion
+                    // Don't overwrite a deleted task with non-deleted cloud data
+                    if (localIsDeleted && !cloudIsDeleted) {
+                        Log.d(TAG, "SYNC DEBUG: Preserving local soft-deletion - " + localTaskToUpdate.description + 
+                              " (Local deletedAt: " + localTaskToUpdate.deletedAt + ", Cloud deletedAt: null)");
+                        // Keep the local task as deleted, but update firestoreDocumentId if needed
+                        if (localTaskToUpdate.firestoreDocumentId == null) {
+                            localTaskToUpdate.firestoreDocumentId = cloudTask.firestoreDocumentId;
+                            taskDao.update(localTaskToUpdate);
+                        }
+                        continue;
+                    }
+                    
                     // Smart merge: use the newer version for each field based on updatedAt timestamp
                     long localUpdatedAt = localTaskToUpdate.updatedAt != null ? localTaskToUpdate.updatedAt : 0;
                     long cloudUpdatedAt = cloudTask.updatedAt != null ? cloudTask.updatedAt : 0;
                     
                     // Use cloud data if it's newer, otherwise keep local data
                     if (cloudUpdatedAt > localUpdatedAt) {
+                        // Preserve local deletion status unless cloud is also deleted (and possibly newer)
+                        Long preservedDeletedAt = localTaskToUpdate.deletedAt;
+                        
                         localTaskToUpdate.description = cloudTask.description;
                         localTaskToUpdate.dueDate = cloudTask.dueDate;
                         localTaskToUpdate.dueTime = cloudTask.dueTime;
@@ -433,10 +461,38 @@ public class SyncManager {
                         localTaskToUpdate.reminderDays = cloudTask.reminderDays;
                         localTaskToUpdate.manualPosition = cloudTask.manualPosition;
                         localTaskToUpdate.updatedAt = cloudTask.updatedAt;
+                        
+                        // Handle deletedAt: if cloud is deleted, use cloud's deletedAt
+                        // Otherwise, preserve local deletedAt if it exists
+                        if (cloudIsDeleted) {
+                            localTaskToUpdate.deletedAt = cloudTask.deletedAt;
+                            Log.d(TAG, "SYNC DEBUG: Cloud task is deleted, applying deletion - " + cloudTask.description + 
+                                  " (Cloud deletedAt: " + cloudTask.deletedAt + ")");
+                        } else if (preservedDeletedAt != null && preservedDeletedAt > 0) {
+                            // Keep local deletion
+                            localTaskToUpdate.deletedAt = preservedDeletedAt;
+                            Log.d(TAG, "SYNC DEBUG: Preserving local deletion during cloud merge - " + localTaskToUpdate.description + 
+                                  " (Local deletedAt: " + preservedDeletedAt + ")");
+                        } else {
+                            // Neither is deleted, keep deletedAt as null
+                            localTaskToUpdate.deletedAt = null;
+                        }
                     } else {
                         // Keep all local data, but update the firestoreDocumentId if it was missing
                         if (localTaskToUpdate.firestoreDocumentId == null) {
                             localTaskToUpdate.firestoreDocumentId = cloudTask.firestoreDocumentId;
+                        }
+                        // If cloud is deleted but local is not, and local is newer, keep local (not deleted)
+                        // But if cloud is deleted and local is also deleted, prefer the newer deletion
+                        if (cloudIsDeleted && !localIsDeleted) {
+                            // Local is newer and not deleted, keep it
+                            Log.d(TAG, "SYNC DEBUG: Local task is newer and not deleted, keeping local version - " + localTaskToUpdate.description);
+                        } else if (cloudIsDeleted && localIsDeleted) {
+                            // Both deleted, use the newer deletedAt
+                            if (cloudTask.deletedAt > localTaskToUpdate.deletedAt) {
+                                localTaskToUpdate.deletedAt = cloudTask.deletedAt;
+                                Log.d(TAG, "SYNC DEBUG: Both deleted, using newer deletion timestamp - " + localTaskToUpdate.description);
+                            }
                         }
                     }
                     

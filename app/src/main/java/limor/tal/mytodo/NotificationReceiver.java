@@ -146,14 +146,78 @@ public class NotificationReceiver extends BroadcastReceiver {
                 Log.d("MyToDo", "NotificationReceiver: Retrieved task: " + (task != null ? task.description : "null") + ", isCompleted: " + (task != null ? task.isCompleted : "N/A"));
                 
                 if (task != null) {
-                    Log.d("MyToDo", "NotificationReceiver: Before update - isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate);
+                    Log.d("MyToDo", "NotificationReceiver: Before update - isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate + ", recurrenceType: " + task.recurrenceType);
                     
-                    // Mark as completed and save completion time
-                    task.isCompleted = true;
-                    task.completionDate = System.currentTimeMillis();
-                    
-                    // Only clear fields for NON-recurring tasks
-                    if (!task.isRecurring) {
+                    // Handle recurring task completion
+                    if (task.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(task.recurrenceType)) {
+                        // For monthly tasks, update due date to next month and reset to waiting
+                        Log.d("MyToDo", "NotificationReceiver: Handling monthly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.MONTH, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.MONTH, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d("MyToDo", "NotificationReceiver: Monthly task completed and moved to next month: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(task.recurrenceType)) {
+                        // For weekly tasks, update due date to next week and reset to waiting
+                        Log.d("MyToDo", "NotificationReceiver: Handling weekly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.WEEK_OF_YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d("MyToDo", "NotificationReceiver: Weekly task completed and moved to next week: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_BIWEEKLY.equals(task.recurrenceType)) {
+                        // For bi-weekly tasks, update due date to 2 weeks later and reset to waiting
+                        Log.d("MyToDo", "NotificationReceiver: Handling bi-weekly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d("MyToDo", "NotificationReceiver: Bi-weekly task completed and moved to 2 weeks later: " + task.description + ", new due date: " + task.dueDate);
+                    } else if (task.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(task.recurrenceType)) {
+                        // For yearly tasks, update due date to next year and reset to waiting
+                        Log.d("MyToDo", "NotificationReceiver: Handling yearly recurring task: " + task.description);
+                        Calendar calendar = Calendar.getInstance();
+                        if (task.dueDate != null) {
+                            calendar.setTimeInMillis(task.dueDate);
+                            calendar.add(Calendar.YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        } else {
+                            calendar.add(Calendar.YEAR, 1);
+                            task.dueDate = calendar.getTimeInMillis();
+                        }
+                        task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                        task.isCompleted = false;
+                        task.completionDate = null;
+                        Log.d("MyToDo", "NotificationReceiver: Yearly task completed and moved to next year: " + task.description + ", new due date: " + task.dueDate);
+                    } else {
+                        // For non-recurring tasks, mark as completed and clear fields
+                        Log.d("MyToDo", "NotificationReceiver: Handling non-recurring task: " + task.description);
+                        task.isCompleted = true;
+                        task.completionDate = System.currentTimeMillis();
                         task.dueDate = null;
                         task.dueTime = null;
                         task.dayOfWeek = null;
@@ -162,8 +226,6 @@ public class NotificationReceiver extends BroadcastReceiver {
                         task.reminderOffset = null;
                         task.priority = 0;
                         Log.d("MyToDo", "NotificationReceiver: Cleared fields for non-recurring task: " + task.description);
-                    } else {
-                        Log.d("MyToDo", "NotificationReceiver: Preserved fields for recurring task: " + task.description + ", recurrenceType: " + task.recurrenceType);
                     }
                     
                     Log.d("MyToDo", "NotificationReceiver: After update - isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate);

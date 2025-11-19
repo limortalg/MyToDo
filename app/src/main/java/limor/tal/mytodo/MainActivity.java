@@ -460,6 +460,24 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.completionDate = null;
                             Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Weekly task completed and moved to next week: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
+                        } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_BIWEEKLY.equals(selectedTask.recurrenceType)) {
+                            // For bi-weekly tasks, update due date to 2 weeks later and reset to waiting
+                            Log.d("MyToDo", "COMPLETION DEBUG: Before bi-weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Calendar calendar = Calendar.getInstance();
+                            if (selectedTask.dueDate != null) {
+                                calendar.setTimeInMillis(selectedTask.dueDate);
+                                calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            } else {
+                                // If no due date, set it to 2 weeks from today
+                                calendar.add(Calendar.WEEK_OF_YEAR, 2);
+                                selectedTask.dueDate = calendar.getTimeInMillis();
+                            }
+                            selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
+                            selectedTask.isCompleted = false;
+                            selectedTask.completionDate = null;
+                            Log.d("MyToDo", "COMPLETION DEBUG: After bi-weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
+                            Log.d("MyToDo", "Complete button: Bi-weekly task completed and moved to 2 weeks later: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(selectedTask.recurrenceType)) {
                             // For yearly tasks, update due date to next year and reset to waiting
                             Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
@@ -1096,13 +1114,10 @@ public class MainActivity extends AppCompatActivity {
         recurrenceTypeSpinner.setVisibility(recurringCheckBox.isChecked() ? View.VISIBLE : View.GONE);
         if (task != null && task.recurrenceType != null) {
             try {
-                // Translate English recurrence type to localized version before searching
-                String translatedRecurrenceType = TaskTranslationUtils.translateRecurrenceType(this, task.recurrenceType);
-                int rIdx = findIndex(recurrenceTypes, translatedRecurrenceType);
+                int rIdx = findIndex(recurrenceTypes, task.recurrenceType);
                 if (rIdx >= 0 && rIdx < recurrenceTypes.length) {
                     recurrenceTypeSpinner.setSelection(rIdx);
                 } else {
-                    Log.w("MyToDo", "showTaskDialog: Could not find recurrence type '" + task.recurrenceType + "' (translated: '" + translatedRecurrenceType + "') in array, defaulting to first item");
                     recurrenceTypeSpinner.setSelection(0);
                 }
             } catch (Exception e) {
