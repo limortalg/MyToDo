@@ -70,15 +70,19 @@ app/src/main/java/limor/tal/mytodo/
     └── TaskViewHolder.java      # Task item view holder
 ```
 
-#### Android Widget
+#### Android Widgets
 ```
 app/src/main/java/limor/tal/mytodo/
-├── SimpleTaskWidgetProvider.java # Widget provider
-├── TaskRemoteViewsFactory.java  # Widget task list factory
-├── TaskWidgetService.java       # Widget service
+├── SimpleTaskWidgetProvider.java           # MyToDo task widget provider
+├── TaskRemoteViewsFactory.java            # Widget task list factory
+├── TaskWidgetService.java                 # Widget service
+├── FamilySyncWidgetProvider.java          # FamilySync 1x1 widget provider
+├── FamilySyncSelectableWidgetProvider.java # FamilySync selectable widget provider
 └── res/layout/
-    ├── widget_layout.xml        # Main widget layout
-    └── widget_task_item.xml     # Individual task item
+    ├── widget_layout.xml                   # MyToDo task widget layout
+    ├── widget_task_item.xml                # Individual task item
+    ├── familysync_widget_layout.xml        # FamilySync 1x1 widget layout
+    └── familysync_selectable_widget_layout.xml # FamilySync selectable widget layout
 ```
 
 ### FamilySync Integration
@@ -446,7 +450,7 @@ The app uses a hybrid local-cloud architecture:
 
 ### Debug Information
 
-- **Logcat Tags**: `MyToDo`, `FirestoreService`, `FamilySyncService`, `SimpleTaskWidget`
+- **Logcat Tags**: `MyToDo`, `FirestoreService`, `FamilySyncService`, `SimpleTaskWidget`, `FamilySyncWidget`, `FamilySyncSelectableWidget`
 - **Firestore Console**: Check `task_sync_logs` collection for sync operations
 - **Android Studio**: Use Firebase Assistant for configuration validation
 
@@ -487,7 +491,7 @@ The app uses a hybrid local-cloud architecture:
 - [ ] **Task Dependencies**: Link related tasks
 - [ ] **Time Tracking**: Track time spent on tasks
 - [ ] **Team Collaboration**: Share tasks with family members
-- [ ] **Advanced Widgets**: Multiple widget sizes and layouts
+- [x] **FamilySync Widgets**: Two widget types for displaying pending task/question counts (1x1 combined and resizable selectable)
 - [ ] **Voice Commands**: Voice-based task creation
 - [ ] **Smart Notifications**: AI-powered reminder suggestions
 - [ ] **Analytics Dashboard**: Task completion insights
