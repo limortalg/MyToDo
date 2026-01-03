@@ -173,16 +173,42 @@ app/src/main/java/limor/tal/mytodo/
    # Click Run button in Android Studio
    ```
 
+### Version Management
+
+The app displays its version number next to the app name in the top bar. This helps ensure family members are using the same version when sharing APKs manually.
+
+**Version Configuration:**
+- Version is defined in `app/build.gradle.kts`:
+  ```kotlin
+  versionCode = 1        // Internal version number (increment for each release)
+  versionName = "1.0"   // User-visible version string
+  ```
+
+**Important Versioning Rules:**
+- ⚠️ **DO NOT advance the version unless explicitly requested by the developer**
+- The version appears as "MyToDo v1.0" (or current version) in the app header
+- When sharing APKs with family, check that everyone has the same version displayed
+- Only increment `versionCode` and update `versionName` when the developer specifically requests it
+
+**To Update Version (when requested):**
+1. Open `app/build.gradle.kts`
+2. Increment `versionCode` (e.g., 1 → 2)
+3. Update `versionName` (e.g., "1.0" → "1.1" or "2.0")
+4. Rebuild the APK
+5. The new version will automatically appear in the app header
+
 ## 📱 Widget Setup
 
-### Adding Widget to Home Screen
+### MyToDo Task Widget
+
+#### Adding Widget to Home Screen
 
 1. **Long Press** on home screen
 2. **Select "Widgets"** from menu
 3. **Find "MyToDo"** in widget list
 4. **Drag to Home Screen** and resize as needed
 
-### Widget Features
+#### Widget Features
 
 - **Task List**: Scrollable list of incomplete tasks
 - **Toggle Buttons**: Switch between "All Tasks" and "Today's Tasks"
@@ -190,12 +216,62 @@ app/src/main/java/limor/tal/mytodo/
 - **Refresh**: Manual refresh of task list
 - **FamilySync Indicators**: 👥 icon for imported tasks
 
-### Widget Permissions
+### FamilySync Widgets
 
-The widget requires:
-- **Internet Permission**: For Firestore sync
+The app includes two FamilySync widgets that display pending task and question counts from your families:
+
+#### 1. FamilySync 1x1 Widget (Combined Counts)
+
+- **Size**: 1x1 (70dp minimum, fixed size)
+- **Display**: Shows combined counts from all your families
+  - Number of pending tasks assigned to you
+  - Number of pending questions assigned to you
+- **Features**:
+  - Adaptive text sizing based on widget dimensions
+  - Layout switches to horizontal (side-by-side) when widget is wider than tall
+  - Color-coded counts: Gold for tasks > 0, Red-orange for questions > 0
+  - Refresh button (⟳) for manual updates
+  - Tapping widget opens FamilySync web app
+- **Updates**: Automatic updates at midnight and noon, plus manual refresh
+
+#### 2. FamilySync Selectable Widget (Family-Specific)
+
+- **Size**: 3x2 default (180dp × 110dp), fully resizable horizontally and vertically
+- **Display**: Shows counts for a selected family
+  - Family name at the top
+  - Number of pending tasks assigned to you in that family
+  - Number of pending questions assigned to you in that family
+- **Features**:
+  - **Family Selection**: Tap the switch button (⇄) to cycle through your families
+  - **Adaptive Layout**: 
+    - Horizontal layout (side-by-side) when widget is wide
+    - Vertical layout (stacked) when widget is narrow (1x1 or tall)
+  - **Dynamic Sizing**: Text, numbers, and buttons scale based on widget size
+  - **Smart Text**: Title hides automatically when widget height is too small
+  - Color-coded counts: Gold for tasks > 0, Red-orange for questions > 0
+  - Refresh button (⟳) for manual updates
+  - Tapping widget opens FamilySync web app
+- **Updates**: Automatic updates at midnight and noon, plus manual refresh
+
+#### Adding FamilySync Widgets to Home Screen
+
+1. **Long Press** on home screen
+2. **Select "Widgets"** from menu
+3. **Find "FamilySync"** in widget list (two widget options available)
+4. **Select desired widget** (1x1 or Selectable)
+5. **Drag to Home Screen** and resize (Selectable widget only)
+
+#### Widget Requirements
+
+- **User Authentication**: You must be signed in to the MyToDo app with Firebase Auth
+- **FamilySync Account**: You must be a member of at least one family group in FamilySync
+- **Internet Connection**: Required for fetching counts from FamilySync API
+
+#### Widget Permissions
+
+The widgets require:
+- **Internet Permission**: For API calls to FamilySync backend
 - **Network State**: To detect connectivity changes
-- **Vibrate Permission**: For completion feedback
 
 ## 🔄 FamilySync Integration Usage
 
