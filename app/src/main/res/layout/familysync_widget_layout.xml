@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/familysync_widget_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="3dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:layoutDirection="ltr">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/familysync_widget_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:text="@string/familysync_widget_name"
+        android:textColor="#FF03DAC5"
+        android:textSize="8sp"
+        android:textStyle="bold"
+        android:gravity="center" />
+
+    <!-- Container for both tasks and questions - can be horizontal or vertical -->
+    <LinearLayout
+        android:id="@+id/familysync_counts_container"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:layout_below="@id/familysync_widget_title"
+        android:layout_above="@id/familysync_widget_refresh"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layoutDirection="ltr">
+
+    <!-- Tasks container - can be horizontal or vertical based on size -->
+    <LinearLayout
+        android:id="@+id/familysync_tasks_line"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="1dp"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layoutDirection="ltr">
+
+        <TextView
+            android:id="@+id/familysync_tasks_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:minWidth="20dp"
+            android:layoutDirection="ltr" />
+
+        <TextView
+            android:id="@+id/familysync_tasks_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="tasks"
+            android:textColor="@android:color/white"
+            android:textSize="7sp"
+            android:gravity="center"
+            android:layoutDirection="ltr" />
+
+    </LinearLayout>
+
+    <!-- Questions container - can be horizontal or vertical based on size -->
+    <LinearLayout
+        android:id="@+id/familysync_questions_line"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:gravity="center"
+        android:layoutDirection="ltr">
+
+        <TextView
+            android:id="@+id/familysync_questions_count"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textColor="@android:color/white"
+            android:textSize="14sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:minWidth="20dp"
+            android:layoutDirection="ltr" />
+
+        <TextView
+            android:id="@+id/familysync_questions_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="questions"
+            android:textColor="@android:color/white"
+            android:textSize="7sp"
+            android:gravity="center"
+            android:layoutDirection="ltr" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Refresh button - bottom right corner -->
+    <Button
+        android:id="@+id/familysync_widget_refresh"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:text="⟳"
+        android:textSize="9sp"
+        android:textColor="@android:color/white"
+        android:background="@drawable/modern_button_selector"
+        android:fontFamily="sans-serif-medium"
+        android:padding="0dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp" />
+
+</RelativeLayout>
+

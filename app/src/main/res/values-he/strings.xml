@@ -99,4 +99,12 @@
     <string name="today_tasks">היום</string>
     <string name="my_tasks">המשימות שלי</string>
     <string name="no_tasks_today">אין משימות להיום</string>
+    
+    <!-- FamilySync Widget -->
+    <string name="familysync_widget_name">FamilySync</string>
+    <string name="familysync_selectable_widget_name">FamilySync (בורר משפחה)</string>
+    <string name="familysync_widget_counts_format">%1$d משימות\n%2$d שאלות</string>
+    <string name="familysync_loading">טוען…</string>
+    <string name="familysync_error">שגיאה בטעינה</string>
+    <string name="familysync_not_signed_in">התחבר כדי לצפות</string>
 </resources>

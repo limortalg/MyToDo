@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/familysync_selectable_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_background"
+    android:padding="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:layoutDirection="ltr"
+    android:gravity="center_vertical">
+
+    <!-- Title -->
+    <TextView
+        android:id="@+id/familysync_selectable_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerHorizontal="true"
+        android:layout_alignParentTop="true"
+        android:text="@string/familysync_widget_name"
+        android:textColor="#FF03DAC5"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="2dp" />
+
+    <!-- Family name with switch button -->
+    <LinearLayout
+        android:id="@+id/familysync_selectable_header"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/familysync_selectable_title"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp"
+        android:paddingStart="4dp"
+        android:paddingEnd="4dp">
+
+        <TextView
+            android:id="@+id/familysync_selectable_group_name"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Family"
+            android:textColor="@android:color/white"
+            android:textSize="9sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:maxLines="1"
+            android:ellipsize="end" />
+
+        <!-- Switch family button (visible only if multiple groups) -->
+        <Button
+            android:id="@+id/familysync_selectable_switch_family"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:text="⇄"
+        android:textSize="10sp"
+            android:textColor="@android:color/white"
+            android:background="@drawable/modern_button_selector"
+            android:fontFamily="sans-serif-medium"
+            android:padding="0dp"
+            android:minWidth="0dp"
+            android:minHeight="0dp"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+    <!-- Counts container - centered vertically when widget is large -->
+    <LinearLayout
+        android:id="@+id/familysync_selectable_counts_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/familysync_selectable_header"
+        android:layout_above="@id/familysync_selectable_refresh"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="2dp">
+
+        <!-- Tasks count -->
+        <LinearLayout
+            android:id="@+id/familysync_selectable_tasks_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layoutDirection="ltr"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp">
+
+            <TextView
+                android:id="@+id/familysync_selectable_tasks_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layoutDirection="ltr" />
+
+            <TextView
+                android:id="@+id/familysync_selectable_tasks_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="tasks"
+                android:textColor="@android:color/white"
+                android:textSize="9sp"
+                android:gravity="center"
+                android:layoutDirection="ltr" />
+
+        </LinearLayout>
+
+        <!-- Questions count -->
+        <LinearLayout
+            android:id="@+id/familysync_selectable_questions_container"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:layoutDirection="ltr"
+            android:layout_marginTop="2dp"
+            android:layout_marginBottom="2dp">
+
+            <TextView
+                android:id="@+id/familysync_selectable_questions_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textColor="@android:color/white"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:layoutDirection="ltr" />
+
+            <TextView
+                android:id="@+id/familysync_selectable_questions_label"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="questions"
+                android:textColor="@android:color/white"
+                android:textSize="9sp"
+                android:gravity="center"
+                android:layoutDirection="ltr" />
+
+        </LinearLayout>
+
+    </LinearLayout>
+
+    <!-- Refresh button - bottom right -->
+    <Button
+        android:id="@+id/familysync_selectable_refresh"
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:layout_alignParentEnd="true"
+        android:layout_alignParentBottom="true"
+        android:text="⟳"
+        android:textSize="10sp"
+        android:textColor="@android:color/white"
+        android:background="@drawable/modern_button_selector"
+        android:fontFamily="sans-serif-medium"
+        android:padding="0dp"
+        android:minWidth="0dp"
+        android:minHeight="0dp" />
+
+</RelativeLayout>
+

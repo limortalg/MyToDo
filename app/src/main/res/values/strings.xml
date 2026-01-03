@@ -145,4 +145,12 @@
     <string name="today_tasks">Today</string>
     <string name="my_tasks">My Tasks</string>
     <string name="no_tasks_today">No tasks for today</string>
+    
+    <!-- FamilySync Widget -->
+    <string name="familysync_widget_name">FamilySync</string>
+    <string name="familysync_selectable_widget_name">FamilySync (Family Selector)</string>
+    <string name="familysync_widget_counts_format">%1$d tasks\n%2$d questions</string>
+    <string name="familysync_loading">Loading…</string>
+    <string name="familysync_error">Error loading</string>
+    <string name="familysync_not_signed_in">Sign in to view</string>
 </resources>

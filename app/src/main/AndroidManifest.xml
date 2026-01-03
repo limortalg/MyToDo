@@ -2,6 +2,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
     <uses-permission android:name="android.permission.USE_EXACT_ALARM" />
@@ -86,6 +87,28 @@
             </intent-filter>
             <meta-data android:name="android.appwidget.provider"
                 android:resource="@xml/task_widget_info" />
+        </receiver>
+        
+        <!-- FamilySync Widget Provider -->
+        <receiver android:name=".FamilySyncWidgetProvider"
+            android:exported="true"
+            android:label="@string/familysync_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/familysync_widget_info" />
+        </receiver>
+        
+        <!-- FamilySync Selectable Widget Provider -->
+        <receiver android:name=".FamilySyncSelectableWidgetProvider"
+            android:exported="true"
+            android:label="@string/familysync_selectable_widget_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data android:name="android.appwidget.provider"
+                android:resource="@xml/familysync_selectable_widget_info" />
         </receiver>
         
     </application>
