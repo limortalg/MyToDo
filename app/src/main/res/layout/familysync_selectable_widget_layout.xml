@@ -4,7 +4,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/widget_background"
-    android:padding="6dp"
+    android:padding="2dp"
     android:clickable="true"
     android:focusable="true"
     android:layoutDirection="ltr"
@@ -19,10 +19,10 @@
         android:layout_alignParentTop="true"
         android:text="@string/familysync_widget_name"
         android:textColor="#FF03DAC5"
-        android:textSize="10sp"
+        android:textSize="8sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="2dp" />
+        android:layout_marginBottom="0dp" />
 
     <!-- Family name with switch button -->
     <LinearLayout
@@ -32,10 +32,10 @@
         android:layout_below="@id/familysync_selectable_title"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:layout_marginTop="2dp"
-        android:layout_marginBottom="4dp"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp">
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="0dp"
+        android:paddingStart="2dp"
+        android:paddingEnd="2dp">
 
         <TextView
             android:id="@+id/familysync_selectable_group_name"
@@ -44,7 +44,7 @@
             android:layout_weight="1"
             android:text="Family"
             android:textColor="@android:color/white"
-            android:textSize="9sp"
+            android:textSize="7sp"
             android:textStyle="bold"
             android:gravity="center"
             android:maxLines="1"
@@ -53,10 +53,10 @@
         <!-- Switch family button (visible only if multiple groups) -->
         <Button
             android:id="@+id/familysync_selectable_switch_family"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:text="⇄"
-        android:textSize="10sp"
+        android:textSize="12sp"
             android:textColor="@android:color/white"
             android:background="@drawable/modern_button_selector"
             android:fontFamily="sans-serif-medium"
@@ -76,7 +76,8 @@
         android:layout_above="@id/familysync_selectable_refresh"
         android:orientation="horizontal"
         android:gravity="center"
-        android:layout_marginTop="2dp">
+        android:layout_marginTop="0dp"
+        android:layout_marginBottom="1dp">
 
         <!-- Tasks count -->
         <LinearLayout
@@ -87,8 +88,8 @@
             android:orientation="vertical"
             android:gravity="center"
             android:layoutDirection="ltr"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="2dp">
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp">
 
             <TextView
                 android:id="@+id/familysync_selectable_tasks_count"
@@ -96,7 +97,7 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layoutDirection="ltr" />
@@ -107,7 +108,7 @@
                 android:layout_height="wrap_content"
                 android:text="tasks"
                 android:textColor="@android:color/white"
-                android:textSize="9sp"
+                android:textSize="7sp"
                 android:gravity="center"
                 android:layoutDirection="ltr" />
 
@@ -122,8 +123,8 @@
             android:orientation="vertical"
             android:gravity="center"
             android:layoutDirection="ltr"
-            android:layout_marginTop="2dp"
-            android:layout_marginBottom="2dp">
+            android:layout_marginTop="0dp"
+            android:layout_marginBottom="0dp">
 
             <TextView
                 android:id="@+id/familysync_selectable_questions_count"
@@ -131,7 +132,7 @@
                 android:layout_height="wrap_content"
                 android:text="0"
                 android:textColor="@android:color/white"
-                android:textSize="18sp"
+                android:textSize="14sp"
                 android:textStyle="bold"
                 android:gravity="center"
                 android:layoutDirection="ltr" />
@@ -142,7 +143,7 @@
                 android:layout_height="wrap_content"
                 android:text="questions"
                 android:textColor="@android:color/white"
-                android:textSize="9sp"
+                android:textSize="7sp"
                 android:gravity="center"
                 android:layoutDirection="ltr" />
 
@@ -153,12 +154,14 @@
     <!-- Refresh button - bottom right -->
     <Button
         android:id="@+id/familysync_selectable_refresh"
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
+        android:layout_marginEnd="1dp"
+        android:layout_marginBottom="1dp"
         android:text="⟳"
-        android:textSize="10sp"
+        android:textSize="9sp"
         android:textColor="@android:color/white"
         android:background="@drawable/modern_button_selector"
         android:fontFamily="sans-serif-medium"

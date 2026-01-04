@@ -63,6 +63,12 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
     }
     
     @Override
+    public void onAppWidgetOptionsChanged(Context context, AppWidgetManager appWidgetManager, int appWidgetId, Bundle newOptions) {
+        // Widget was resized - update it with new sizing
+        updateWidget(context, appWidgetManager, appWidgetId);
+    }
+    
+    @Override
     public void onReceive(Context context, Intent intent) {
         super.onReceive(context, intent);
         
@@ -127,25 +133,23 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
             
             String userId = currentUser.getUid();
             
-            // Apply size-based styling
+            // Apply size-based styling - always call it to ensure proper sizing
             Bundle options = null;
             boolean isWide = false;
-            float sizeMultiplier = 1.0f;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 options = appWidgetManager.getAppWidgetOptions(appWidgetId);
                 if (options != null) {
                     int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
                     int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
                     isWide = minWidth > minHeight * 1.5f;
-                    float area = minWidth * minHeight;
-                    if (area > 15000) {
-                        sizeMultiplier = 1.5f;
-                    } else if (area > 8000) {
-                        sizeMultiplier = 1.2f;
-                    }
                 }
             }
-            applySizeBasedStyling(context, views, appWidgetManager, appWidgetId, isWide, sizeMultiplier);
+            // Always apply styling, including for 2x1
+            try {
+                applySizeBasedStyling(context, views, appWidgetManager, appWidgetId, isWide, 0.0f);
+            } catch (Exception e) {
+                Log.e(TAG, "Error applying size-based styling", e);
+            }
             
             // Set title
             views.setTextViewText(R.id.familysync_selectable_title, context.getString(R.string.familysync_widget_name));
@@ -173,7 +177,8 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
             appWidgetManager.updateAppWidget(appWidgetId, views);
             
             // Load groups and counts
-            new LoadGroupsAndCountsTask(context, appWidgetManager, appWidgetId, userId, sizeMultiplier).execute();
+            // Pass 0.0f as multiplier - LoadGroupsAndCountsTask will recalculate from widget dimensions
+            new LoadGroupsAndCountsTask(context, appWidgetManager, appWidgetId, userId, 0.0f).execute();
             
         } catch (Exception e) {
             Log.e(TAG, "Error updating widget", e);
@@ -222,51 +227,50 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
             
             int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
             int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
-            isWide = minWidth > minHeight * 1.5f;
-            boolean isNarrow = minWidth < minHeight * 1.2f; // Narrower than tall
-            boolean isSmallHeight = minHeight < 100; // Very small height
             
-            float area = minWidth * minHeight;
-            if (area > 30000) {
-                sizeMultiplier = 2.0f;
-            } else if (area > 20000) {
-                sizeMultiplier = 1.8f;
-            } else if (area > 12000) {
-                sizeMultiplier = 1.5f;
-            } else if (area > 8000) {
-                sizeMultiplier = 1.2f;
+            // Calculate text multiplier based on widget dimensions
+            // Default 2x1 (110dp x 70dp) = 1.0x multiplier
+            boolean isWiderThanOne = minWidth > 70;
+            boolean isTallerThanOne = minHeight > 70;
+            boolean heightIsTwo = minHeight > 70 && minHeight <= 150; // Height is 2 cells
+            boolean isLargerThan2x2 = minWidth > 150 && minHeight > 150; // Larger than 2x2
+            
+            float textMultiplier = 1.0f;
+            if (isLargerThan2x2) {
+                // Larger than 2x2 - scale aggressively
+                float area = minWidth * minHeight;
+                if (area > 80000) { // Very large (3x3+)
+                    textMultiplier = 3.0f;
+                } else if (area > 60000) { // Large (3x2 or 2x3)
+                    textMultiplier = 2.5f;
+                } else {
+                    textMultiplier = 2.0f; // Larger than 2x2
+                }
+            } else if (heightIsTwo) {
+                // Height is 2 cells (1x2, 2x2) - 50% larger
+                textMultiplier = 1.5f;
             } else {
-                sizeMultiplier = 1.0f; // Default 3x2 size
+                // Default 2x1 size - keep base sizes
+                textMultiplier = 1.0f;
             }
             
-            // Hide or shrink title if height is too small
-            if (isSmallHeight) {
-                views.setViewVisibility(R.id.familysync_selectable_title, android.view.View.GONE);
-            } else {
-                views.setViewVisibility(R.id.familysync_selectable_title, android.view.View.VISIBLE);
-            }
+            // Button multiplier - grows with both width and height (more with height), matching first widget logic
+            // For 2x1, use smaller base button size to avoid hiding content
+            // 2x1 widget height is exactly 70dp, so use <= 75 to catch it
+            float baseButtonSize = (minHeight <= 75) ? 18f : 24f; // Even smaller in 2x1 (18dp), normal for larger (24dp)
+            float buttonWidthFactor = isWiderThanOne ? Math.min((minWidth - 70) / 70f * 0.2f, 0.3f) : 0f; // Max 30% from width
+            float buttonHeightFactor = isTallerThanOne ? Math.min((minHeight - 70) / 70f * 0.4f, 0.6f) : 0f; // Max 60% from height
+            float buttonMultiplier = 1.0f + buttonWidthFactor + buttonHeightFactor;
             
-            // Adjust layout orientation based on width
-            if (isNarrow) {
-                // Narrow layout: tasks and questions stacked vertically (one above the other)
-                views.setInt(R.id.familysync_selectable_counts_container, "setOrientation", 1); // VERTICAL
-                views.setInt(R.id.familysync_selectable_tasks_container, "setOrientation", 1); // VERTICAL (number above label)
-                views.setInt(R.id.familysync_selectable_questions_container, "setOrientation", 1); // VERTICAL (number above label)
-            } else {
-                // Wide layout: tasks and questions side by side
-                views.setInt(R.id.familysync_selectable_counts_container, "setOrientation", 0); // HORIZONTAL
-                views.setInt(R.id.familysync_selectable_tasks_container, "setOrientation", 1); // VERTICAL (number above label)
-                views.setInt(R.id.familysync_selectable_questions_container, "setOrientation", 1); // VERTICAL (number above label)
-            }
+            // Base sizes for 2x1 (matching first widget's proportions but slightly larger for this widget)
+            float titleSize = 8f * textMultiplier;
+            float groupNameSize = 7f * textMultiplier;
+            float numberSize = 14f * textMultiplier;
+            float labelSize = 7f * textMultiplier;
             
-            // Adjust text sizes - start smaller for 3x2, scale aggressively
-            float titleSize = 10f * sizeMultiplier;
-            float groupNameSize = 9f * sizeMultiplier;
-            float numberSize = 18f * sizeMultiplier;
-            float labelSize = 9f * sizeMultiplier;
-            // Much more aggressive button scaling - square the multiplier
-            float buttonSize = 20f * sizeMultiplier * sizeMultiplier;
-            float buttonTextSize = 10f * sizeMultiplier * sizeMultiplier;
+            // Button size - smaller base for 2x1 to avoid hiding content, grows with multiplier
+            float buttonSize = baseButtonSize * buttonMultiplier;
+            float buttonTextSize = (baseButtonSize == 18f ? 9f : 12f) * buttonMultiplier; // 9sp for 18dp button, 12sp for 24dp button
             
             views.setTextViewTextSize(R.id.familysync_selectable_title, TypedValue.COMPLEX_UNIT_SP, titleSize);
             views.setTextViewTextSize(R.id.familysync_selectable_group_name, TypedValue.COMPLEX_UNIT_SP, groupNameSize);
@@ -479,6 +483,72 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
             try {
                 RemoteViews views = new RemoteViews(context.getPackageName(), R.layout.familysync_selectable_widget_layout);
                 
+                // Re-apply size-based styling to ensure layout and sizes are correct
+                Bundle options = null;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    options = appWidgetManager.getAppWidgetOptions(appWidgetId);
+                }
+                
+                if (options != null) {
+                    int minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH);
+                    int minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT);
+                    
+                    // Calculate multipliers based on current widget dimensions
+                    boolean isWiderThanOne = minWidth > 70;
+                    boolean isTallerThanOne = minHeight > 70;
+                    boolean heightIsTwo = minHeight > 70 && minHeight <= 150;
+                    boolean isLargerThan2x2 = minWidth > 150 && minHeight > 150;
+                    
+                    float textMultiplier = 1.0f;
+                    if (isLargerThan2x2) {
+                        float area = minWidth * minHeight;
+                        if (area > 80000) {
+                            textMultiplier = 3.0f;
+                        } else if (area > 60000) {
+                            textMultiplier = 2.5f;
+                        } else {
+                            textMultiplier = 2.0f;
+                        }
+                    } else if (heightIsTwo) {
+                        textMultiplier = 1.5f;
+                    }
+                    
+                    // For 2x1, use smaller base button size to avoid hiding content
+                    // 2x1 widget height is exactly 70dp, so use <= 75 to catch it
+                    float baseButtonSize = (minHeight <= 75) ? 18f : 24f; // Even smaller in 2x1 (18dp), normal for larger (24dp)
+                    float buttonWidthFactor = isWiderThanOne ? Math.min((minWidth - 70) / 70f * 0.2f, 0.3f) : 0f;
+                    float buttonHeightFactor = isTallerThanOne ? Math.min((minHeight - 70) / 70f * 0.4f, 0.6f) : 0f;
+                    float buttonMultiplier = 1.0f + buttonWidthFactor + buttonHeightFactor;
+                    
+                    // Apply text sizes
+                    float titleSize = 8f * textMultiplier;
+                    float groupNameSize = 7f * textMultiplier;
+                    float numberSize = 14f * textMultiplier;
+                    float labelSize = 7f * textMultiplier;
+                    float buttonSize = baseButtonSize * buttonMultiplier;
+                    float buttonTextSize = (baseButtonSize == 18f ? 9f : 12f) * buttonMultiplier; // 9sp for 18dp button, 12sp for 24dp button
+                    
+                    // Apply all text sizes (always apply, even for 2x1, to ensure consistency)
+                    views.setTextViewTextSize(R.id.familysync_selectable_title, TypedValue.COMPLEX_UNIT_SP, titleSize);
+                    views.setTextViewTextSize(R.id.familysync_selectable_group_name, TypedValue.COMPLEX_UNIT_SP, groupNameSize);
+                    views.setTextViewTextSize(R.id.familysync_selectable_tasks_count, TypedValue.COMPLEX_UNIT_SP, numberSize);
+                    views.setTextViewTextSize(R.id.familysync_selectable_questions_count, TypedValue.COMPLEX_UNIT_SP, numberSize);
+                    views.setTextViewTextSize(R.id.familysync_selectable_tasks_label, TypedValue.COMPLEX_UNIT_SP, labelSize);
+                    views.setTextViewTextSize(R.id.familysync_selectable_questions_label, TypedValue.COMPLEX_UNIT_SP, labelSize);
+                    views.setViewLayoutWidth(R.id.familysync_selectable_refresh, (int)(buttonSize), TypedValue.COMPLEX_UNIT_DIP);
+                    views.setViewLayoutHeight(R.id.familysync_selectable_refresh, (int)(buttonSize), TypedValue.COMPLEX_UNIT_DIP);
+                    views.setTextViewTextSize(R.id.familysync_selectable_refresh, TypedValue.COMPLEX_UNIT_SP, buttonTextSize);
+                    views.setViewLayoutWidth(R.id.familysync_selectable_switch_family, (int)(buttonSize), TypedValue.COMPLEX_UNIT_DIP);
+                    views.setViewLayoutHeight(R.id.familysync_selectable_switch_family, (int)(buttonSize), TypedValue.COMPLEX_UNIT_DIP);
+                    views.setTextViewTextSize(R.id.familysync_selectable_switch_family, TypedValue.COMPLEX_UNIT_SP, buttonTextSize);
+                    
+                    // Update sizeMultiplier for count styling below
+                    sizeMultiplier = textMultiplier;
+                }
+                
+                // Set title color
+                views.setTextColor(R.id.familysync_selectable_title, 0xFF03DAC5);
+                
                 if (result != null) {
                     // Set group name
                     views.setTextViewText(R.id.familysync_selectable_group_name, result.groupName != null ? result.groupName : "Family");
@@ -489,19 +559,28 @@ public class FamilySyncSelectableWidgetProvider extends AppWidgetProvider {
                     views.setTextViewText(R.id.familysync_selectable_tasks_label, "tasks");
                     views.setTextViewText(R.id.familysync_selectable_questions_label, "questions");
                     
-                    // Style counts
-                    float baseNumberSize = 24f * sizeMultiplier;
+                    // Style counts - use recalculated multiplier
+                    float baseNumberSize = 14f * sizeMultiplier; // Base 14sp for 2x1
                     int tasksTextColor = result.tasksCount > 0 ? 0xFFFFD700 : 0xFFFFFFFF;
                     int questionsTextColor = result.questionsCount > 0 ? 0xFFFF6B6B : 0xFFFFFFFF;
                     
                     views.setTextColor(R.id.familysync_selectable_tasks_count, tasksTextColor);
                     views.setTextColor(R.id.familysync_selectable_questions_count, questionsTextColor);
                     
-                    float tasksNumberSize = result.tasksCount > 0 ? baseNumberSize * 1.1f : baseNumberSize;
-                    float questionsNumberSize = result.questionsCount > 0 ? baseNumberSize * 1.1f : baseNumberSize;
+                    // Only make numbers bigger if multiplier > 1.0 (not 2x1 default)
+                    if (sizeMultiplier > 1.0f && result.tasksCount > 0) {
+                        float tasksNumberSize = baseNumberSize * 1.1f;
+                        views.setTextViewTextSize(R.id.familysync_selectable_tasks_count, TypedValue.COMPLEX_UNIT_SP, tasksNumberSize);
+                    } else {
+                        views.setTextViewTextSize(R.id.familysync_selectable_tasks_count, TypedValue.COMPLEX_UNIT_SP, baseNumberSize);
+                    }
                     
-                    views.setTextViewTextSize(R.id.familysync_selectable_tasks_count, TypedValue.COMPLEX_UNIT_SP, tasksNumberSize);
-                    views.setTextViewTextSize(R.id.familysync_selectable_questions_count, TypedValue.COMPLEX_UNIT_SP, questionsNumberSize);
+                    if (sizeMultiplier > 1.0f && result.questionsCount > 0) {
+                        float questionsNumberSize = baseNumberSize * 1.1f;
+                        views.setTextViewTextSize(R.id.familysync_selectable_questions_count, TypedValue.COMPLEX_UNIT_SP, questionsNumberSize);
+                    } else {
+                        views.setTextViewTextSize(R.id.familysync_selectable_questions_count, TypedValue.COMPLEX_UNIT_SP, baseNumberSize);
+                    }
                     
                     // Set up family switcher if multiple groups
                     if (result.groupsArray != null && result.groupsArray.length() > 1) {
