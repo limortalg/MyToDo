@@ -166,6 +166,27 @@ public class MainActivity extends AppCompatActivity {
             Log.e("MyToDo", "onCreate: Error checking layout type", e);
         }
         
+        // Set app name with version
+        try {
+            String versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            String appName = getString(R.string.app_name);
+            String appNameWithVersion = appName + " v" + versionName;
+            
+            // Update tablet layout app name
+            TextView appNameTablet = findViewById(R.id.appNameTablet);
+            if (appNameTablet != null) {
+                appNameTablet.setText(appNameWithVersion);
+            }
+            
+            // Update phone layout app name
+            TextView appNameNarrow = findViewById(R.id.appNameNarrow);
+            if (appNameNarrow != null) {
+                appNameNarrow.setText(appNameWithVersion);
+            }
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("MyToDo", "onCreate: Could not get version name", e);
+        }
+        
         // Check exact alarm permission for Android 12+
         if (android.os.Build.VERSION.SDK_INT >= 31) {
             try {
