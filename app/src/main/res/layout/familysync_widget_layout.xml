@@ -18,7 +18,7 @@
         android:layout_alignParentTop="true"
         android:text="@string/familysync_widget_name"
         android:textColor="#FF03DAC5"
-        android:textSize="8sp"
+        android:textSize="6sp"
         android:textStyle="bold"
         android:gravity="center" />
 
@@ -40,7 +40,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="1dp"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:gravity="center"
         android:layoutDirection="ltr">
 
@@ -50,11 +50,18 @@
             android:layout_height="wrap_content"
             android:text="0"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:minWidth="20dp"
+            android:minWidth="18dp"
             android:layoutDirection="ltr" />
+
+        <TextView
+            android:id="@+id/familysync_tasks_spacer"
+            android:layout_width="2dp"
+            android:layout_height="1dp"
+            android:text=""
+            android:background="@android:color/transparent" />
 
         <TextView
             android:id="@+id/familysync_tasks_label"
@@ -62,7 +69,7 @@
             android:layout_height="wrap_content"
             android:text="tasks"
             android:textColor="@android:color/white"
-            android:textSize="7sp"
+            android:textSize="6sp"
             android:gravity="center"
             android:layoutDirection="ltr" />
 
@@ -73,7 +80,7 @@
         android:id="@+id/familysync_questions_line"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:gravity="center"
         android:layoutDirection="ltr">
 
@@ -83,11 +90,18 @@
             android:layout_height="wrap_content"
             android:text="0"
             android:textColor="@android:color/white"
-            android:textSize="14sp"
+            android:textSize="11sp"
             android:textStyle="bold"
             android:gravity="center"
-            android:minWidth="20dp"
+            android:minWidth="18dp"
             android:layoutDirection="ltr" />
+
+        <TextView
+            android:id="@+id/familysync_questions_spacer"
+            android:layout_width="2dp"
+            android:layout_height="1dp"
+            android:text=""
+            android:background="@android:color/transparent" />
 
         <TextView
             android:id="@+id/familysync_questions_label"
@@ -95,7 +109,7 @@
             android:layout_height="wrap_content"
             android:text="questions"
             android:textColor="@android:color/white"
-            android:textSize="7sp"
+            android:textSize="6sp"
             android:gravity="center"
             android:layoutDirection="ltr" />
 
@@ -106,12 +120,12 @@
     <!-- Refresh button - bottom right corner -->
     <Button
         android:id="@+id/familysync_widget_refresh"
-        android:layout_width="18dp"
-        android:layout_height="18dp"
+        android:layout_width="24dp"
+        android:layout_height="24dp"
         android:layout_alignParentEnd="true"
         android:layout_alignParentBottom="true"
         android:text="⟳"
-        android:textSize="9sp"
+        android:textSize="12sp"
         android:textColor="@android:color/white"
         android:background="@drawable/modern_button_selector"
         android:fontFamily="sans-serif-medium"
