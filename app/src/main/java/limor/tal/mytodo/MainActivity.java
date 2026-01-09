@@ -1135,10 +1135,13 @@ public class MainActivity extends AppCompatActivity {
         recurrenceTypeSpinner.setVisibility(recurringCheckBox.isChecked() ? View.VISIBLE : View.GONE);
         if (task != null && task.recurrenceType != null) {
             try {
-                int rIdx = findIndex(recurrenceTypes, task.recurrenceType);
+                // Translate English recurrence type to localized version before searching
+                String translatedRecurrenceType = TaskTranslationUtils.translateRecurrenceType(this, task.recurrenceType);
+                int rIdx = findIndex(recurrenceTypes, translatedRecurrenceType);
                 if (rIdx >= 0 && rIdx < recurrenceTypes.length) {
                     recurrenceTypeSpinner.setSelection(rIdx);
                 } else {
+                    Log.w("MyToDo", "showTaskDialog: Could not find recurrence type '" + task.recurrenceType + "' (translated: '" + translatedRecurrenceType + "') in array, defaulting to first item");
                     recurrenceTypeSpinner.setSelection(0);
                 }
             } catch (Exception e) {
@@ -1657,7 +1660,7 @@ public class MainActivity extends AppCompatActivity {
             if (millis == null) {
                 textView.setText("");
             } else {
-                textView.setText(new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date(millis)));
+                textView.setText(new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(new Date(millis)));
             }
         } catch (Exception e) {
             Log.e("MyToDo", "updateDateLabel: Error updating date label", e);

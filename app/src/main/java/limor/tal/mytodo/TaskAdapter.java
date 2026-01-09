@@ -756,9 +756,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
                 Calendar completionCal = Calendar.getInstance();
                 completionCal.setTimeInMillis(task.completionDate);
                 String label = context.getString(R.string.completed_label);
-                dueText = label + ": " + new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(completionCal.getTime());
+                dueText = label + ": " + new SimpleDateFormat("dd-MM-yyyy HH:mm", Locale.getDefault()).format(completionCal.getTime());
             } else if (task.dueDate != null) {
-                dueText = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(task.dueDate);
+                dueText = new SimpleDateFormat("dd-MM-yyyy", Locale.getDefault()).format(task.dueDate);
             } else if (task.dayOfWeek != null && task.dayOfWeek.equals(TaskConstants.DAY_IMMEDIATE)) {
                 dueText = daysOfWeek[1]; // Immediate
             }
@@ -771,7 +771,9 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
             }
             
             if (task.isRecurring && task.recurrenceType != null && !task.recurrenceType.equals(TaskConstants.DAY_IMMEDIATE)) {
-                dueText += " (" + task.recurrenceType + ")";
+                // Translate English recurrence type to localized version for display
+                String translatedRecurrenceType = TaskTranslationUtils.translateRecurrenceType(context, task.recurrenceType);
+                dueText += " (" + translatedRecurrenceType + ")";
             }
             
             if (task.reminderOffset != null && task.reminderOffset > 0 && (!task.isCompleted || task.isRecurring)) {
