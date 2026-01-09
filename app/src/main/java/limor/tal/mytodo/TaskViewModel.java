@@ -230,10 +230,41 @@ public class TaskViewModel extends AndroidViewModel {
         }
 
         for (Task task : tasks) {
-            // Skip soft-deleted tasks
-            if (task.deletedAt != null && task.deletedAt > 0) {
-                Log.d("MyToDo", "processTasksByCategory: Skipping soft-deleted task: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+            // Enhanced logging for deletion status - log ALL tasks to track deletedAt
+            boolean isDeleted = task.deletedAt != null && task.deletedAt > 0;
+            
+            // DEBUG: Special logging for tasks that might match deletion debugging patterns
+            // boolean isPossibleB12Task = task.description != null && 
+            //         (task.description.toLowerCase().contains("b12") || 
+            //          task.description.contains("לא לקחת") ||
+            //          task.description.contains("לקחת") ||
+            //          task.description.contains("לכתוב לדורותה") ||
+            //          task.description.startsWith("לכתוב"));
+            
+            if (isDeleted) {
+                // DEBUG: Uncomment for deletion debugging
+                // if (isPossibleB12Task) {
+                //     Log.e("MyToDo", "DELETION DEBUG B12: Found deleted B12 task: " + task.description + 
+                //           " (ID: " + task.id + ", deletedAt: " + task.deletedAt + ", FirestoreID: " + 
+                //           (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + ") - THIS SHOULD NOT APPEAR IN UI");
+                // }
+                // Log.w("MyToDo", "FILTER DELETED: Skipping soft-deleted task: " + task.description + 
+                //       " (ID: " + task.id + ", deletedAt: " + task.deletedAt + ", FirestoreID: " + 
+                //       (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + ")");
                 continue;
+            } else {
+                // DEBUG: Uncomment for deletion debugging
+                // if (isPossibleB12Task) {
+                //     Log.e("MyToDo", "DELETION DEBUG B12: Found B12 task that is NOT deleted: " + task.description + 
+                //           " (ID: " + task.id + ", deletedAt: " + (task.deletedAt != null ? task.deletedAt : "NULL") + 
+                //           ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                //           ") - THIS IS WHY IT APPEARS IN UI");
+                // }
+                // Log tasks that are NOT deleted but might have been expected to be deleted
+                // This helps identify tasks that were supposed to be deleted but aren't
+                // Log.d("MyToDo", "TASK STATUS: Processing task: " + task.description + 
+                //       " (ID: " + task.id + ", deletedAt: " + (task.deletedAt != null ? task.deletedAt : "NULL") + 
+                //       ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + ")");
             }
             
             // Add detailed logging for each task being processed

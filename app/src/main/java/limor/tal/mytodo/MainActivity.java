@@ -28,6 +28,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.ScrollView;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.app.AppCompatDelegate;
@@ -172,16 +173,20 @@ public class MainActivity extends AppCompatActivity {
             String appName = getString(R.string.app_name);
             String appNameWithVersion = appName + " v" + versionName;
             
-            // Update tablet layout app name
+            // Update tablet layout app name and make it clickable
             TextView appNameTablet = findViewById(R.id.appNameTablet);
             if (appNameTablet != null) {
                 appNameTablet.setText(appNameWithVersion);
+                appNameTablet.setClickable(true);
+                appNameTablet.setOnClickListener(v -> showWhatsNewDialog());
             }
             
-            // Update phone layout app name
+            // Update phone layout app name and make it clickable
             TextView appNameNarrow = findViewById(R.id.appNameNarrow);
             if (appNameNarrow != null) {
                 appNameNarrow.setText(appNameWithVersion);
+                appNameNarrow.setClickable(true);
+                appNameNarrow.setOnClickListener(v -> showWhatsNewDialog());
             }
         } catch (PackageManager.NameNotFoundException e) {
             Log.e("MyToDo", "onCreate: Could not get version name", e);
@@ -792,11 +797,27 @@ public class MainActivity extends AppCompatActivity {
             includeCompletedCheckBox.setChecked(include);
         });
         viewModel.getAllTasks().observe(this, tasks -> {
-            Log.d("MyToDo", "onCreate: Main getAllTasks observer triggered with " + (tasks != null ? tasks.size() : "null") + " tasks");
+            // DEBUG: Uncomment for debugging
+            // Log.d("MyToDo", "onCreate: Main getAllTasks observer triggered with " + (tasks != null ? tasks.size() : "null") + " tasks");
             if (tasks != null) {
-                Log.d("MyToDo", "onCreate: Main getAllTasks observer calling updateTasksByCategory() with " + tasks.size() + " tasks");
+                // DEBUG: Log all tasks from database to check deletedAt status
+                // for (Task task : tasks) {
+                //     boolean isPossibleB12Task = task.description != null && 
+                //             (task.description.toLowerCase().contains("b12") || 
+                //              task.description.contains("לא לקחת") ||
+                //              task.description.contains("לקחת") ||
+                //              task.description.contains("לכתוב לדורותה") ||
+                //              task.description.startsWith("לכתוב"));
+                //     if (isPossibleB12Task) {
+                //         Log.e("MyToDo", "DATABASE QUERY B12: Found B12 task from database query: " + task.description + 
+                //               " (ID: " + task.id + ", deletedAt: " + (task.deletedAt != null ? task.deletedAt : "NULL") + 
+                //               ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                //               ") - Database query returned this task (deletedAt must be NULL to be returned)");
+                //     }
+                // }
+                // DEBUG: Log.d("MyToDo", "onCreate: Main getAllTasks observer calling updateTasksByCategory() with " + tasks.size() + " tasks");
                 viewModel.updateTasksByCategory(tasks);
-                Log.d("MyToDo", "onCreate: Main getAllTasks observer finished updateTasksByCategory()");
+                // DEBUG: Log.d("MyToDo", "onCreate: Main getAllTasks observer finished updateTasksByCategory()");
             } else {
                 Log.w("MyToDo", "onCreate: Main getAllTasks observer received null tasks");
             }
@@ -1530,7 +1551,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshSelectedTaskFromDatabase(int taskId) {
-        Log.d("MyToDo", "REFRESH DEBUG: Refreshing task from database - ID: " + taskId);
+        // DEBUG: Uncomment for debugging
+        // Log.d("MyToDo", "REFRESH DEBUG: Refreshing task from database - ID: " + taskId);
         
         // Get the latest task data from database
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -1547,8 +1569,10 @@ public class MainActivity extends AppCompatActivity {
                 }
                 
                 if (refreshedTask != null) {
-                    Log.d("MyToDo", "REFRESH DEBUG: Found refreshed task - " + refreshedTask.description + 
-                          " (ID: " + refreshedTask.id + ", FirestoreID: " + (refreshedTask.firestoreDocumentId != null ? refreshedTask.firestoreDocumentId : "NULL") + ")");
+                    // DEBUG: Uncomment for debugging
+                    // Log.d("MyToDo", "REFRESH DEBUG: Found refreshed task - " + refreshedTask.description + 
+                    //       " (ID: " + refreshedTask.id + ", FirestoreID: " + (refreshedTask.firestoreDocumentId != null ? refreshedTask.firestoreDocumentId : "NULL") + 
+                    //       ", deletedAt: " + (refreshedTask.deletedAt != null ? refreshedTask.deletedAt : "null") + ")");
                     
                     // Update selectedTask on main thread
                     final Task finalRefreshedTask = refreshedTask;
@@ -1557,13 +1581,14 @@ public class MainActivity extends AppCompatActivity {
                         showDeleteConfirmationDialog(selectedTask);
                     });
                 } else {
-                    Log.e("MyToDo", "REFRESH DEBUG: Task not found in database - ID: " + taskId);
+                    // DEBUG: Log.e("MyToDo", "REFRESH DEBUG: Task not found in database - ID: " + taskId);
                     runOnUiThread(() -> {
                         Toast.makeText(this, "Task not found", Toast.LENGTH_SHORT).show();
                     });
                 }
             } catch (Exception e) {
-                Log.e("MyToDo", "REFRESH DEBUG: Error refreshing task from database", e);
+                // DEBUG: Uncomment for debugging
+                // Log.e("MyToDo", "REFRESH DEBUG: Error refreshing task from database", e);
                 runOnUiThread(() -> {
                     Toast.makeText(this, "Error refreshing task", Toast.LENGTH_SHORT).show();
                 });
@@ -1583,42 +1608,43 @@ public class MainActivity extends AppCompatActivity {
                    // Cancel any pending reminders for this task
                    if (task.reminderOffset != null) {
                        cancelReminder(task.id);
-                       Log.d("MyToDo", "showDeleteConfirmationDialog: Cancelled reminder for task: " + task.description);
+                       // DEBUG: Log.d("MyToDo", "showDeleteConfirmationDialog: Cancelled reminder for task: " + task.description);
                    }
                    
                    // Choose deletion strategy based on whether task was ever synced to cloud
-                   Log.d("MyToDo", "DELETE DEBUG: " + task.description + " - FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
+                   // DEBUG: Uncomment for debugging
+                   // Log.d("MyToDo", "DELETE DEBUG: " + task.description + " - FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL"));
                    
                    if (task.firestoreDocumentId != null) {
                        // Task was synced to cloud - use soft delete
-                       Log.d("MyToDo", "DELETE DEBUG: Soft delete - " + task.description);
+                       long deletionTime = System.currentTimeMillis();
+                       final String firestoreId = task.firestoreDocumentId;
+                       final String taskDescription = task.description;
+                       
+                       // DEBUG: Uncomment for debugging
+                       // Log.w("MyToDo", "DELETE TASK: Soft deleting task - " + task.description + 
+                       //       " (ID: " + task.id + ", FirestoreID: " + task.firestoreDocumentId + 
+                       //       ", deletedAt: " + deletionTime + ")");
                        
                        // Set deletedAt timestamp for soft deletion
-                       task.deletedAt = System.currentTimeMillis();
-                       task.updatedAt = System.currentTimeMillis();
+                       task.deletedAt = deletionTime;
+                       task.updatedAt = deletionTime;
                        
                        // Update the task in the database (soft delete)
                        viewModel.update(task);
+                       // DEBUG: Uncomment for debugging
+                       // Log.w("MyToDo", "DELETE TASK: Task soft-deleted in database - " + task.description + " (deletedAt: " + task.deletedAt + ")");
                        
-                       // Sync the soft deletion to cloud if user is authenticated
+                       // CRITICAL FIX: Immediately sync deletion to Firestore instead of relying on forceSync
+                       // This ensures the deletion is synced right away, so other devices will see it
                        if (authService.isUserSignedIn()) {
-                           syncManager.forceSync(new SyncManager.SyncCallback() {
-                               @Override
-                               public void onSyncComplete(boolean success, String message) {                                                                        
-                                   Log.d("MyToDo", "DELETE DEBUG: Sync result - " + (success ? "SUCCESS" : "FAILED") + " - " + task.description);                                    
-                               }
-
-                               @Override
-                               public void onSyncProgress(String message) {
-                                   // Log.d("MyToDo", "DELETE DEBUG: Cloud sync progress: " + message);                                                                      
-                               }
-                           });
+                           syncManager.syncDeletionToFirestore(firestoreId, taskDescription);
                        } else {
-                           Log.d("MyToDo", "DELETE DEBUG: User not authenticated - " + task.description);                                             
+                           // DEBUG: Log.d("MyToDo", "DELETE DEBUG: User not authenticated - " + task.description);
                        }
                    } else {
                        // Task was never synced to cloud - use hard delete
-                       Log.d("MyToDo", "DELETE DEBUG: Hard delete - " + task.description);
+                       // DEBUG: Log.d("MyToDo", "DELETE DEBUG: Hard delete - " + task.description);
                        
                        // Hard delete the task from local database
                        viewModel.delete(task, true); // Use hard delete
@@ -2974,5 +3000,61 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void showWhatsNewDialog() {
+        try {
+            String versionName = getPackageManager().getPackageInfo(getPackageName(), 0).versionName;
+            
+            // Build changelog text with dates
+            StringBuilder changelog = new StringBuilder();
+            changelog.append("v1.6 - Latest (January 9, 2026)\n");
+            changelog.append("• Fixed recurrence type translation in task list and edit dialog\n");
+            changelog.append("• Changed date format to Israeli format (dd-MM-yyyy)\n");
+            changelog.append("• Fixed task deletion sync between devices\n");
+            changelog.append("• Added task count display in day headers\n");
+            changelog.append("• Improved deletion sync to prevent deleted tasks from reappearing\n");
+            changelog.append("• Added \"What's New\" dialog accessible by clicking version number\n\n");
+            
+            changelog.append("v1.5 (January 4, 2026)\n");
+            changelog.append("• Fixed FamilySync widget text sizing and spacing\n");
+            changelog.append("• Fixed recurrence type spinner showing correct value when editing\n");
+            changelog.append("• Fixed bi-weekly recurring task completion and reset logic\n");
+            changelog.append("• Added FamilySync widgets (1x1 combined counts and resizable selectable)\n");
+            changelog.append("• Improved task categorization\n");
+            changelog.append("• Added soft deletion sync improvements\n");
+            changelog.append("• Fixed completion date display\n");
+            changelog.append("• Fixed task deletion sync bug - deleted tasks no longer reappear\n\n");
+            
+            changelog.append("v1.0 (September 21, 2025)\n");
+            changelog.append("• Initial release with task management\n");
+            changelog.append("• Firebase authentication and cloud sync\n");
+            changelog.append("• Web app with cross-platform sync\n");
+            changelog.append("• Recurring tasks (daily, weekly, monthly, yearly)\n");
+            changelog.append("• Task reminders\n");
+            changelog.append("• Search and filter functionality\n");
+            changelog.append("• FamilySync integration\n");
+            changelog.append("• Android widgets\n");
+            
+            // Create and show dialog
+            AlertDialog.Builder builder = new AlertDialog.Builder(this);
+            builder.setTitle("What's New - v" + versionName);
+            
+            // Make the dialog scrollable
+            ScrollView scrollView = new ScrollView(this);
+            TextView textView = new TextView(this);
+            textView.setText(changelog.toString());
+            textView.setPadding(50, 20, 50, 20);
+            textView.setTextSize(14);
+            textView.setTextColor(getResources().getColor(android.R.color.black, getTheme()));
+            scrollView.addView(textView);
+            builder.setView(scrollView);
+            
+            builder.setPositiveButton("OK", (dialog, which) -> dialog.dismiss());
+            
+            builder.create().show();
+        } catch (PackageManager.NameNotFoundException e) {
+            Log.e("MyToDo", "showWhatsNewDialog: Could not get version name", e);
+            Toast.makeText(this, "Error showing version information", Toast.LENGTH_SHORT).show();
+        }
+    }
 
 }

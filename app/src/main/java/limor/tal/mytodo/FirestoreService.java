@@ -143,7 +143,8 @@ public class FirestoreService {
 
     // Soft delete a task from Firestore (set deletedAt timestamp)
     public void softDeleteTask(String documentId, FirestoreCallback callback) {
-        Log.d(TAG, "SOFT DELETE DEBUG: " + documentId);
+        // DEBUG: Uncomment for debugging
+        // Log.d(TAG, "SOFT DELETE DEBUG: " + documentId);
         
         if (auth.getCurrentUser() == null) {
             callback.onError("User not authenticated");
@@ -158,7 +159,8 @@ public class FirestoreService {
                 .addOnSuccessListener(new OnSuccessListener<Void>() {
                     @Override
                     public void onSuccess(Void aVoid) {
-                        Log.d(TAG, "SOFT DELETE DEBUG: Success - " + documentId);
+                        // DEBUG: Uncomment for debugging
+                        // Log.d(TAG, "SOFT DELETE DEBUG: Success - " + documentId);
                         callback.onSuccess(null);
                     }
                 })
@@ -232,11 +234,18 @@ public class FirestoreService {
                                     if (firestoreTask != null) {
                                         firestoreTask.documentId = document.getId();
                                         
-                                        // Skip soft-deleted tasks
-                                        if (firestoreTask.isDeleted()) {
-                                            Log.d(TAG, "Skipping soft-deleted task: " + firestoreTask.description + 
-                                                  " (deletedAt: " + firestoreTask.deletedAt + ")");
-                                            continue;
+                                        // CRITICAL FIX: Don't skip deleted tasks - we need them to sync deletions to other devices
+                                        // The sync process will handle applying deletions locally
+                                        boolean isDeleted = firestoreTask.isDeleted();
+                                        
+                                        if (isDeleted) {
+                                            Log.w(TAG, "LOAD FIRESTORE: Loading DELETED task from cloud (needed for sync) - " + firestoreTask.description + 
+                                                  " (FirestoreID: " + document.getId() + ", deletedAt: " + firestoreTask.deletedAt + 
+                                                  ", updatedAt: " + firestoreTask.updatedAt + ")");
+                                        } else {
+                                            Log.w(TAG, "LOAD FIRESTORE: Loading task from cloud - " + firestoreTask.description + 
+                                                  " (FirestoreID: " + document.getId() + ", deletedAt: " + firestoreTask.deletedAt + 
+                                                  ", updatedAt: " + firestoreTask.updatedAt + ")");
                                         }
                                         
                                         Log.d(TAG, "Loaded FirestoreTask: " + firestoreTask.description + 
@@ -246,7 +255,8 @@ public class FirestoreService {
                                         Log.d(TAG, "Converted to local Task: " + localTask.description + 
                                               ", sourceApp: " + localTask.sourceApp + 
                                               ", sourceTaskId: " + localTask.sourceTaskId +
-                                              ", isExportedFromFamilySync: " + localTask.isExportedFromFamilySync());
+                                              ", isExportedFromFamilySync: " + localTask.isExportedFromFamilySync() +
+                                              ", deletedAt: " + localTask.deletedAt);
                                         tasks.add(localTask);
                                     }
                                 } catch (Exception e) {

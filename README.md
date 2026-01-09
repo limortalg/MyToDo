@@ -198,8 +198,16 @@ The app displays its version number next to the app name in the top bar. This he
 1. Open `app/build.gradle.kts`
 2. Increment `versionCode` (e.g., 1 → 2)
 3. Update `versionName` (e.g., "1.0" → "1.1" or "2.0")
-4. Rebuild the APK
-5. The new version will automatically appear in the app header
+4. **Update the "What's New" dialog** in `MainActivity.java`:
+   - Find the `showWhatsNewDialog()` method
+   - Add a new section for the new version at the top of the changelog
+   - **Include the release date** in the format: `v1.X - Latest (Month Day, Year)`
+   - List the new features, fixes, and improvements for this version
+   - Move previous versions down in the changelog (keep their dates)
+   - For older versions, you can use month/year format: `v1.X (Month Year)`
+5. Rebuild the APK
+6. The new version will automatically appear in the app header
+7. Users can click on the version number to see the changelog with dates
 
 ## 📱 Widget Setup
 

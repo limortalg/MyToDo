@@ -212,19 +212,40 @@ public class SyncManager {
             
             // Check for conflicts and new tasks
             for (limor.tal.mytodo.Task cloudTask : cloudTasks) {
-                // Skip soft-deleted cloud tasks
-                if (cloudTask.deletedAt != null && cloudTask.deletedAt > 0) {
-                    continue;
-                }
+                // CRITICAL FIX: Don't skip deleted cloud tasks - we need to process them to apply deletions locally
+                boolean cloudIsDeleted = cloudTask.deletedAt != null && cloudTask.deletedAt > 0;
                 
                 if (cloudTask.firestoreDocumentId != null && localMap.containsKey(cloudTask.firestoreDocumentId)) {
                     limor.tal.mytodo.Task localTask = localMap.get(cloudTask.firestoreDocumentId);
                     
-                    // If local task is soft-deleted, skip adding to tasksToUpdate
-                    // The deletion sync logic will handle syncing the deletion to cloud
+                    // If cloud task is deleted, we need to apply the deletion locally
+                    if (cloudIsDeleted) {
+                        boolean localIsDeleted = localTask.deletedAt != null && localTask.deletedAt > 0;
+                        if (!localIsDeleted) {
+                            // DEBUG: Uncomment for debugging
+                            // Log.w(TAG, "SYNC DELETION: Cloud task is deleted, applying deletion locally - " + cloudTask.description + 
+                            //       " (Cloud deletedAt: " + cloudTask.deletedAt + 
+                            //       ", Local deletedAt: " + (localTask.deletedAt != null ? localTask.deletedAt : "null") + 
+                            //       ", FirestoreID: " + cloudTask.firestoreDocumentId + ")");
+                            // Add to tasksToUpdate so the deletion can be applied locally
+                            tasksToUpdate.add(cloudTask);
+                        } else {
+                            // Both are deleted, nothing to do
+                            // DEBUG: Log.d(TAG, "SYNC DEBUG: Both cloud and local tasks are deleted - " + cloudTask.description);
+                        }
+                        continue;
+                    }
+                    
+                    // If local task is soft-deleted, still process it in tasksToUpdate
+                    // The updateLocalDatabase logic will properly handle deletion conflicts
                     if (localTask.deletedAt != null && localTask.deletedAt > 0) {
-                        Log.d(TAG, "SYNC DEBUG: Local task is soft-deleted, skipping merge - " + localTask.description + 
-                              " (Local deletedAt: " + localTask.deletedAt + ", will sync deletion to cloud)");
+                        Log.d(TAG, "SYNC DEBUG: Local task is soft-deleted, but cloud task exists - " + localTask.description + 
+                              " (Local deletedAt: " + localTask.deletedAt + 
+                              ", Cloud deletedAt: " + (cloudTask.deletedAt != null ? cloudTask.deletedAt : "null") + 
+                              ", Cloud updatedAt: " + cloudTask.updatedAt + 
+                              ") - adding to tasksToUpdate for conflict resolution");
+                        // Still add to tasksToUpdate so updateLocalDatabase can handle the conflict properly
+                        tasksToUpdate.add(cloudTask);
                         continue;
                     }
                     
@@ -257,6 +278,12 @@ public class SyncManager {
                     }
                 } else {
                     // New task from cloud
+                    // Skip deleted tasks that don't exist locally - nothing to delete
+                    if (cloudIsDeleted) {
+                        Log.d(TAG, "SYNC DEBUG: Cloud task is deleted but doesn't exist locally - skipping - " + cloudTask.description + 
+                              " (FirestoreID: " + cloudTask.firestoreDocumentId + ")");
+                        continue;
+                    }
                     Log.d(TAG, "SYNC DEBUG: New task from cloud - " + cloudTask.description + 
                           " (Cloud ID: " + cloudTask.firestoreDocumentId + ")");
                     tasksToInsert.add(cloudTask);
@@ -330,13 +357,15 @@ public class SyncManager {
                         
                         if (cloudDeletedAt == 0) {
                             // Cloud task is not soft-deleted yet, sync the deletion
-                            Log.d(TAG, "SOFT DELETE DEBUG: Syncing deletion - " + localTask.description + 
-                                  " (Firestore ID: " + localTask.firestoreDocumentId + ")");
+                            // DEBUG: Uncomment for debugging
+                            // Log.d(TAG, "SOFT DELETE DEBUG: Syncing deletion - " + localTask.description + 
+                            //       " (Firestore ID: " + localTask.firestoreDocumentId + ")");
                             
                             firestoreService.softDeleteTask(localTask.firestoreDocumentId, new FirestoreService.FirestoreCallback() {
                                 @Override
                                 public void onSuccess(Object result) {
-                                    Log.d(TAG, "SOFT DELETE DEBUG: Success - " + localTask.description);
+                                    // DEBUG: Uncomment for debugging
+                                    // Log.d(TAG, "SOFT DELETE DEBUG: Success - " + localTask.description);
                                 }
 
                                 @Override
@@ -429,12 +458,30 @@ public class SyncManager {
                     // If local task is soft-deleted and cloud task is not, preserve the local deletion
                     // Don't overwrite a deleted task with non-deleted cloud data
                     if (localIsDeleted && !cloudIsDeleted) {
-                        Log.d(TAG, "SYNC DEBUG: Preserving local soft-deletion - " + localTaskToUpdate.description + 
-                              " (Local deletedAt: " + localTaskToUpdate.deletedAt + ", Cloud deletedAt: null)");
+                        final Task finalLocalTaskToUpdate = localTaskToUpdate; // Make final for inner class
+                        final String taskDescription = finalLocalTaskToUpdate.description; // Make final for inner class
+                        Log.w(TAG, "DELETION SYNC: Preserving local soft-deletion - " + taskDescription + 
+                              " (Local deletedAt: " + finalLocalTaskToUpdate.deletedAt + ", Cloud deletedAt: null, FirestoreID: " + 
+                              (finalLocalTaskToUpdate.firestoreDocumentId != null ? finalLocalTaskToUpdate.firestoreDocumentId : "NULL") + ")");
                         // Keep the local task as deleted, but update firestoreDocumentId if needed
-                        if (localTaskToUpdate.firestoreDocumentId == null) {
-                            localTaskToUpdate.firestoreDocumentId = cloudTask.firestoreDocumentId;
-                            taskDao.update(localTaskToUpdate);
+                        if (finalLocalTaskToUpdate.firestoreDocumentId == null) {
+                            finalLocalTaskToUpdate.firestoreDocumentId = cloudTask.firestoreDocumentId;
+                            taskDao.update(finalLocalTaskToUpdate);
+                            Log.w(TAG, "DELETION SYNC: Updated firestoreDocumentId for deleted task: " + taskDescription);
+                        }
+                        // Try to sync the deletion to cloud
+                        if (finalLocalTaskToUpdate.firestoreDocumentId != null) {
+                            final String firestoreId = finalLocalTaskToUpdate.firestoreDocumentId; // Make final for inner class
+                            firestoreService.softDeleteTask(firestoreId, new FirestoreService.FirestoreCallback() {
+                                @Override
+                                public void onSuccess(Object result) {
+                                    Log.w(TAG, "DELETION SYNC: Successfully synced deletion to cloud - " + taskDescription);
+                                }
+                                @Override
+                                public void onError(String error) {
+                                    Log.e(TAG, "DELETION SYNC: Failed to sync deletion to cloud - " + taskDescription + " - " + error);
+                                }
+                            });
                         }
                         continue;
                     }
@@ -445,8 +492,16 @@ public class SyncManager {
                     
                     // Use cloud data if it's newer, otherwise keep local data
                     if (cloudUpdatedAt > localUpdatedAt) {
-                        // Preserve local deletion status unless cloud is also deleted (and possibly newer)
-                        Long preservedDeletedAt = localTaskToUpdate.deletedAt;
+                        // CRITICAL: Preserve local deletion status BEFORE merging any fields
+                        // This must be captured BEFORE any modifications to localTaskToUpdate
+                        Long preservedDeletedAt = localTaskToUpdate.deletedAt != null && localTaskToUpdate.deletedAt > 0 
+                                ? localTaskToUpdate.deletedAt : null;
+                        
+                        // Enhanced logging before merge
+                        Log.d(TAG, "SYNC MERGE: Merging cloud data into local task - " + localTaskToUpdate.description + 
+                              " (Local deletedAt: " + preservedDeletedAt + ", Cloud deletedAt: " + 
+                              (cloudTask.deletedAt != null ? cloudTask.deletedAt : "null") + 
+                              ", Local updatedAt: " + localUpdatedAt + ", Cloud updatedAt: " + cloudUpdatedAt + ")");
                         
                         localTaskToUpdate.description = cloudTask.description;
                         localTaskToUpdate.dueDate = cloudTask.dueDate;
@@ -462,21 +517,30 @@ public class SyncManager {
                         localTaskToUpdate.manualPosition = cloudTask.manualPosition;
                         localTaskToUpdate.updatedAt = cloudTask.updatedAt;
                         
-                        // Handle deletedAt: if cloud is deleted, use cloud's deletedAt
-                        // Otherwise, preserve local deletedAt if it exists
-                        if (cloudIsDeleted) {
-                            localTaskToUpdate.deletedAt = cloudTask.deletedAt;
-                            Log.d(TAG, "SYNC DEBUG: Cloud task is deleted, applying deletion - " + cloudTask.description + 
-                                  " (Cloud deletedAt: " + cloudTask.deletedAt + ")");
-                        } else if (preservedDeletedAt != null && preservedDeletedAt > 0) {
-                            // Keep local deletion
-                            localTaskToUpdate.deletedAt = preservedDeletedAt;
-                            Log.d(TAG, "SYNC DEBUG: Preserving local deletion during cloud merge - " + localTaskToUpdate.description + 
-                                  " (Local deletedAt: " + preservedDeletedAt + ")");
+                    // Handle deletedAt: if cloud is deleted, use cloud's deletedAt
+                    // Otherwise, preserve local deletedAt if it exists - NEVER clear a local deletion
+                    if (cloudIsDeleted) {
+                        localTaskToUpdate.deletedAt = cloudTask.deletedAt;
+                        Log.d(TAG, "SYNC DEBUG: Cloud task is deleted, applying deletion - " + cloudTask.description + 
+                              " (Cloud deletedAt: " + cloudTask.deletedAt + ")");
+                    } else if (preservedDeletedAt != null && preservedDeletedAt > 0) {
+                        // CRITICAL: Always preserve local deletion - cloud version doesn't know about it
+                        localTaskToUpdate.deletedAt = preservedDeletedAt;
+                        Log.w(TAG, "SYNC DEBUG: Preserving local deletion during cloud merge - " + localTaskToUpdate.description + 
+                              " (Local deletedAt: " + preservedDeletedAt + ", Cloud deletedAt: null - task was deleted locally but not on cloud)");
+                    } else {
+                        // Neither is deleted, keep deletedAt as null
+                        // BUT: Triple-check that we're not accidentally clearing a deletion
+                        if (localTaskToUpdate.deletedAt != null && localTaskToUpdate.deletedAt > 0) {
+                            Log.e(TAG, "DELETION BUG DETECTED: About to clear deletedAt for task that was deleted! " + 
+                                  localTaskToUpdate.description + " (deletedAt: " + localTaskToUpdate.deletedAt + 
+                                  ", cloudDeletedAt: " + cloudTask.deletedAt + ", preservedDeletedAt: " + preservedDeletedAt + ")");
+                            // Don't clear it - preserve the deletion
+                            localTaskToUpdate.deletedAt = preservedDeletedAt != null ? preservedDeletedAt : localTaskToUpdate.deletedAt;
                         } else {
-                            // Neither is deleted, keep deletedAt as null
                             localTaskToUpdate.deletedAt = null;
                         }
+                    }
                     } else {
                         // Keep all local data, but update the firestoreDocumentId if it was missing
                         if (localTaskToUpdate.firestoreDocumentId == null) {
@@ -496,7 +560,21 @@ public class SyncManager {
                         }
                     }
                     
+                    // Log before updating to track deletedAt changes
+                    Long oldDeletedAt = localTaskToUpdate.deletedAt;
+                    Log.w(TAG, "SYNC UPDATE: Updating task - " + localTaskToUpdate.description + 
+                          " (ID: " + localTaskToUpdate.id + ", FirestoreID: " + 
+                          (localTaskToUpdate.firestoreDocumentId != null ? localTaskToUpdate.firestoreDocumentId : "NULL") + 
+                          ", oldDeletedAt: " + oldDeletedAt + ", newDeletedAt: " + localTaskToUpdate.deletedAt + 
+                          ", cloudDeletedAt: " + cloudTask.deletedAt + ")");
+                    
                     taskDao.update(localTaskToUpdate);
+                    
+                    // Verify the update didn't accidentally restore a deleted task
+                    if (oldDeletedAt != null && oldDeletedAt > 0 && localTaskToUpdate.deletedAt == null) {
+                        Log.e(TAG, "DELETION BUG DETECTED: Task that was deleted now has deletedAt=null! " + 
+                              localTaskToUpdate.description + " (was deletedAt: " + oldDeletedAt + ")");
+                    }
                 } else {
                     // This is a cloud task that should be updated but no local match found
                     // This can happen in first sync when there are no local tasks yet
@@ -509,17 +587,79 @@ public class SyncManager {
             for (limor.tal.mytodo.Task task : tasksToInsert) {
                 // Check if a task with this firestoreDocumentId already exists
                 boolean alreadyExists = false;
+                boolean existingTaskIsDeleted = false;
                 if (task.firestoreDocumentId != null) {
                     for (limor.tal.mytodo.Task existingTask : allLocalTasks) {
                         if (task.firestoreDocumentId.equals(existingTask.firestoreDocumentId)) {
                             alreadyExists = true;
+                            // Check if the existing task is soft-deleted
+                            existingTaskIsDeleted = existingTask.deletedAt != null && existingTask.deletedAt > 0;
                             break;
                         }
                     }
                 }
                 
+                // Don't insert if task already exists (even if soft-deleted)
+                // Soft-deleted tasks should stay deleted and will be synced to cloud separately
                 if (!alreadyExists) {
-                    taskDao.insert(task);
+                    // Also check if the cloud task itself is deleted - don't insert deleted tasks
+                    boolean cloudIsDeleted = task.deletedAt != null && task.deletedAt > 0;
+                    if (!cloudIsDeleted) {
+                        Log.w(TAG, "SYNC INSERT: Inserting new task from cloud - " + task.description + 
+                              " (FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                              ", deletedAt: " + task.deletedAt + ")");
+                        taskDao.insert(task);
+                        Log.w(TAG, "SYNC INSERT: Task inserted successfully - " + task.description);
+                    } else {
+                        Log.w(TAG, "SYNC INSERT: Skipping insertion of deleted cloud task - " + task.description + 
+                              " (deletedAt: " + task.deletedAt + ")");
+                    }
+                } else if (existingTaskIsDeleted) {
+                    // This shouldn't happen if mergeTasks is working correctly, but handle it just in case
+                    // If cloud task is NOT deleted but local is deleted, preserve the local deletion
+                    boolean cloudIsDeleted = task.deletedAt != null && task.deletedAt > 0;
+                    if (!cloudIsDeleted) {
+                        // Cloud task is not deleted, but local is - PRESERVE THE LOCAL DELETION
+                        // This is a critical bug fix: never restore a task that was deleted locally
+                        Log.w(TAG, "SYNC INSERT BUG FIX: Cloud task exists and is NOT deleted, but local is soft-deleted - " + task.description + 
+                              " (Local deletedAt: " + (task.deletedAt != null ? task.deletedAt : "null") + 
+                              ", Cloud deletedAt: null, Cloud updatedAt: " + task.updatedAt + 
+                              ") - PRESERVING LOCAL DELETION (this should have been handled in tasksToUpdate)");
+                        // Find the existing local task and ensure it stays deleted, sync deletion to cloud
+                        for (limor.tal.mytodo.Task existingTask : allLocalTasks) {
+                            if (task.firestoreDocumentId != null && task.firestoreDocumentId.equals(existingTask.firestoreDocumentId)) {
+                                // CRITICAL: NEVER restore a deleted task - preserve the deletion
+                                long localDeletedAt = existingTask.deletedAt != null ? existingTask.deletedAt : 0;
+                                
+                                // Ensure firestoreDocumentId is set if missing
+                                if (existingTask.firestoreDocumentId == null) {
+                                    existingTask.firestoreDocumentId = task.firestoreDocumentId;
+                                    taskDao.update(existingTask);
+                                    Log.w(TAG, "SYNC INSERT: Updated firestoreDocumentId for deleted task - " + task.description);
+                                }
+                                
+                                // Sync the deletion to cloud
+                                final String firestoreId = existingTask.firestoreDocumentId;
+                                firestoreService.softDeleteTask(firestoreId, new FirestoreService.FirestoreCallback() {
+                                    @Override
+                                    public void onSuccess(Object result) {
+                                        Log.w(TAG, "SYNC INSERT: Successfully synced deletion to cloud - " + task.description);
+                                    }
+                                    @Override
+                                    public void onError(String error) {
+                                        Log.e(TAG, "SYNC INSERT: Failed to sync deletion to cloud - " + task.description + " - " + error);
+                                    }
+                                });
+                                
+                                Log.w(TAG, "SYNC INSERT: Preserved local deletion (deletedAt: " + localDeletedAt + ") - " + task.description);
+                                break;
+                            }
+                        }
+                    } else {
+                        Log.w(TAG, "SYNC INSERT: Skipping insertion - task exists locally and is soft-deleted, cloud is also deleted - " + task.description);
+                    }
+                } else {
+                    Log.w(TAG, "SYNC INSERT: Skipping insertion - task already exists locally (not deleted) - " + task.description);
                 }
             }
             
@@ -680,6 +820,36 @@ public class SyncManager {
         });
     }
 
+
+    // Directly sync a deletion to Firestore - called immediately when a task is deleted
+    public void syncDeletionToFirestore(String firestoreDocumentId, String taskDescription) {
+        if (firestoreDocumentId == null || firestoreDocumentId.isEmpty()) {
+            Log.w(TAG, "syncDeletionToFirestore: Cannot sync deletion - firestoreDocumentId is null or empty for task: " + taskDescription);
+            return;
+        }
+        
+        if (!firestoreService.isUserAuthenticated()) {
+            Log.w(TAG, "syncDeletionToFirestore: Cannot sync deletion - user not authenticated for task: " + taskDescription);
+            return;
+        }
+        
+        Log.w(TAG, "syncDeletionToFirestore: Immediately syncing deletion to Firestore - " + taskDescription + 
+              " (FirestoreID: " + firestoreDocumentId + ")");
+        
+        firestoreService.softDeleteTask(firestoreDocumentId, new FirestoreService.FirestoreCallback() {
+            @Override
+            public void onSuccess(Object result) {
+                Log.w(TAG, "syncDeletionToFirestore: Successfully synced deletion to Firestore - " + taskDescription + 
+                      " (FirestoreID: " + firestoreDocumentId + ")");
+            }
+            
+            @Override
+            public void onError(String error) {
+                Log.e(TAG, "syncDeletionToFirestore: Failed to sync deletion to Firestore - " + taskDescription + 
+                      " (FirestoreID: " + firestoreDocumentId + ") - Error: " + error);
+            }
+        });
+    }
 
     // Cleanup
     public void shutdown() {

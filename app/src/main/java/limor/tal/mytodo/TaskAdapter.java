@@ -592,21 +592,48 @@ public class TaskAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolder> {
 
     public class HeaderViewHolder extends RecyclerView.ViewHolder {
         TextView headerTextView;
+        private String currentCategory; // Store the category name without count
 
         HeaderViewHolder(View itemView) {
             super(itemView);
             headerTextView = itemView.findViewById(R.id.headerTextView);
             // Add click listener to toggle category expansion
             itemView.setOnClickListener(v -> {
-                String category = headerTextView.getText().toString();
-                expandCategory(category);
+                // Use stored category name instead of text (which includes count)
+                if (currentCategory != null) {
+                    expandCategory(currentCategory);
+                }
             });
         }
 
         void bind(String category) {
-            headerTextView.setText(category);
+            // Store the category name without count for click handler
+            currentCategory = category;
+            
+            // Calculate task count for this category
+            int taskCount = 0;
+            for (int i = 0; i < items.size(); i++) {
+                Object item = items.get(i);
+                if (item instanceof Task) {
+                    Task task = (Task) item;
+                    if (task.description != null && !task.description.isEmpty()) {
+                        String taskCategory = getCategoryForTask(task, i);
+                        if (taskCategory.equals(category)) {
+                            taskCount++;
+                        }
+                    }
+                }
+            }
+            
+            // Display category name with task count
+            String headerText = category;
+            if (taskCount > 0) {
+                headerText = category + " (" + taskCount + ")";
+            }
+            headerTextView.setText(headerText);
+            
             // Set bold typeface if category has tasks
-            boolean hasTasks = hasTasksInCategory(category);
+            boolean hasTasks = taskCount > 0;
             headerTextView.setTypeface(null, hasTasks ? Typeface.BOLD : Typeface.NORMAL);
         }
     }

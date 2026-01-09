@@ -86,12 +86,15 @@ public class TaskRepository {
                 taskDao.delete(task);
                 Log.d("MyToDo", "Task hard deleted successfully: " + task.description);
             } else {
-                Log.d("MyToDo", "Soft deleting task: " + task.description);
+                long deletionTime = System.currentTimeMillis();
+                Log.w("MyToDo", "Soft deleting task: " + task.description + " (ID: " + task.id + 
+                      ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
+                      ", deletedAt: " + deletionTime + ")");
                 // Perform soft delete by setting deletedAt timestamp
-                task.deletedAt = System.currentTimeMillis();
-                task.updatedAt = System.currentTimeMillis();
+                task.deletedAt = deletionTime;
+                task.updatedAt = deletionTime;
                 taskDao.update(task);
-                Log.d("MyToDo", "Task soft deleted successfully: " + task.description + " (deletedAt: " + task.deletedAt + ")");
+                Log.w("MyToDo", "Task soft deleted successfully: " + task.description + " (deletedAt: " + task.deletedAt + ")");
             }
         });
     }
