@@ -14,6 +14,10 @@ import java.util.List;
 public interface TaskDao {
     @Insert
     void insert(Task task);
+    
+    // Insert that returns the generated ID
+    @Insert
+    long insertAndReturnId(Task task);
 
     @Update
     void update(Task task);

@@ -62,44 +62,53 @@ public class TaskViewModel extends AndroidViewModel {
         long currentTime = System.currentTimeMillis();
         task.createdAt = currentTime;
         task.updatedAt = currentTime;
-        
-        Log.d("MyToDo", "TASK INSERT DEBUG: Inserting new task: " + task.description + 
-              " (ID: " + task.id + 
-              ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
-              ", createdAt: " + currentTime + 
-              ", reminderOffset: " + task.reminderOffset + ")");
-        
         repository.insert(task);
+    }
+    
+    // Synchronous insert that returns the task with ID set (for new tasks that need immediate ID)
+    public Task insertSync(Task task) {
+        // Set timestamps before inserting
+        long currentTime = System.currentTimeMillis();
+        task.createdAt = currentTime;
+        task.updatedAt = currentTime;
+        Task insertedTask = repository.insertSync(task);
+        return insertedTask;
     }
 
     public void update(Task task) {
         // Set updatedAt timestamp before updating
         long currentTime = System.currentTimeMillis();
         task.updatedAt = currentTime;
-        
-        Log.d("MyToDo", "VIEWMODEL UPDATE DEBUG: Updating task: " + task.description + 
-              " (ID: " + task.id + 
-              ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
-              ", updatedAt: " + currentTime + 
-              ", reminderOffset: " + task.reminderOffset + 
-              ", isRecurring: " + task.isRecurring + 
-              ", recurrenceType: " + task.recurrenceType + 
-              ", dueDate: " + task.dueDate + 
-              ", dayOfWeek: " + task.dayOfWeek + 
-              ", isCompleted: " + task.isCompleted + ")");
-        
         repository.update(task);
-        // Force refresh of allTasks to ensure UI gets updated data
-        // This will trigger the observer in MainActivity which calls updateTasksByCategory()
         forceRefreshAllTasks();
     }
     
     private void forceRefreshAllTasks() {
-        // Force refresh by triggering the observer chain
-        // The MainActivity observer will call updateTasksByCategory(tasks) with the current tasks
-        if (allTasks.getValue() != null) {
-            updateTasksByCategory(allTasks.getValue());
-        }
+        // Force refresh by reading fresh data from database (not using cached LiveData)
+        // This ensures we get the latest state, especially important after sync or task completion
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                // Get fresh data directly from the database on background thread
+                List<Task> freshTasks = repository.getAllTasksSync();
+                if (freshTasks != null) {
+                    // Update UI on main thread with fresh data
+                    new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> {
+                        processTasksByCategory(freshTasks);
+                    });
+                } else {
+                    // Fallback to cached LiveData if database read fails
+                    if (allTasks.getValue() != null) {
+                        updateTasksByCategory(allTasks.getValue());
+                    }
+                }
+            } catch (Exception e) {
+                Log.e("MyToDo", "Error getting fresh tasks in forceRefreshAllTasks", e);
+                // Fallback to cached LiveData on error
+                if (allTasks.getValue() != null) {
+                    updateTasksByCategory(allTasks.getValue());
+                }
+            }
+        });
     }
 
     public void delete(Task task) {

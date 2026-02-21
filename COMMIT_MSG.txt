@@ -1,0 +1,38 @@
+Fix task move overridden by sync; prevent sync from deleting just-uploaded tasks (v1.6.2)
+
+Root cause: Moving a task to another day was overwritten by sync because (1) the move
+dialog used a stale adapter reference (missing firestoreDocumentId), and (2) a follow-up
+sync could delete the newly uploaded task when the cloud read was stale.
+
+MainActivity:
+- Refresh task from DB before opening move/delete dialogs (getTaskById) so we pass
+  current firestoreDocumentId; refactor refreshSelectedTaskFromDatabase to take a
+  callback and use it for both move and delete.
+- New task: use insertSync on background thread so task has ID before forceSync;
+  schedule reminder with actual task ID after insert.
+
+SyncManager:
+- When applying deletes, re-fetch cloud and rebuild tasksToDelete from fresh snapshot
+  (runUpdateLocalDatabaseWithFreshDeleteCheck) so just-uploaded tasks are not removed.
+- Run mergeTasks on executor; run first-sync merge on executor.
+- Clear isSyncing only when sync truly completes (wrappedCallback), not when executor
+  returns.
+- Add tasksToDelete logic and pending new-task uploads handling.
+
+TaskDao:
+- Add insertAndReturnId for synchronous insert with generated ID.
+
+TaskRepository:
+- Add insertSync (calls insertAndReturnId, sets task.id).
+- Update: run taskDao.update on executor.
+
+TaskViewModel:
+- Add insertSync (sets createdAt/updatedAt, calls repository.insertSync).
+- forceRefreshAllTasks: read fresh from DB and post to main thread instead of using
+  cached LiveData.
+
+NotificationReceiver:
+- After completing task from notification: set updatedAt, call repository.update, then
+  sync completion to Firestore (saveTask) if authenticated.
+Version: 1.6 -> 1.6.2 (versionCode 8). Changelog: fixed task move to another day
+being overridden by sync.

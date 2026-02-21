@@ -248,15 +248,7 @@ public class FirestoreService {
                                                   ", updatedAt: " + firestoreTask.updatedAt + ")");
                                         }
                                         
-                                        Log.d(TAG, "Loaded FirestoreTask: " + firestoreTask.description + 
-                                              ", sourceApp: " + firestoreTask.sourceApp + 
-                                              ", sourceTaskId: " + firestoreTask.sourceTaskId);
                                         limor.tal.mytodo.Task localTask = firestoreTask.toTask();
-                                        Log.d(TAG, "Converted to local Task: " + localTask.description + 
-                                              ", sourceApp: " + localTask.sourceApp + 
-                                              ", sourceTaskId: " + localTask.sourceTaskId +
-                                              ", isExportedFromFamilySync: " + localTask.isExportedFromFamilySync() +
-                                              ", deletedAt: " + localTask.deletedAt);
                                         tasks.add(localTask);
                                     }
                                 } catch (Exception e) {

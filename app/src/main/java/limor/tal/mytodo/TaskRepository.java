@@ -49,19 +49,31 @@ public class TaskRepository {
             taskDao.insert(task);
         });
     }
+    
+    // Synchronous insert that returns the task with ID set (for new tasks that need immediate ID)
+    // NOTE: This must be called from a background thread (not the main thread)
+    public Task insertSync(Task task) {
+        try {
+            Log.d("MyToDo", "TaskRepository: Starting synchronous insert - task: " + task.description + ", current id: " + task.id);
+            long insertedId = taskDao.insertAndReturnId(task);
+            task.id = (int) insertedId; // Set the ID explicitly from the return value
+            Log.w("MyToDo", "TaskRepository: Synchronous insert completed - task: " + task.description + ", id: " + task.id + " (returned ID: " + insertedId + ")");
+            
+            // Verify the ID was set correctly
+            if (task.id == 0) {
+                Log.e("MyToDo", "TaskRepository: ERROR - Task ID is still 0 after insert! Returned ID was: " + insertedId);
+            }
+            
+            return task;
+        } catch (Exception e) {
+            Log.e("MyToDo", "TaskRepository: Error in synchronous insert", e);
+            return task;
+        }
+    }
 
     public void update(Task task) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            Log.d("MyToDo", "REPOSITORY UPDATE DEBUG: Updating task: " + task.description + 
-                  " (ID: " + task.id + 
-                  ", FirestoreID: " + (task.firestoreDocumentId != null ? task.firestoreDocumentId : "NULL") + 
-                  ", isRecurring: " + task.isRecurring + 
-                  ", recurrenceType: " + task.recurrenceType + 
-                  ", dueDate: " + task.dueDate + 
-                  ", dayOfWeek: " + task.dayOfWeek + 
-                  ", isCompleted: " + task.isCompleted + ")");
             taskDao.update(task);
-            Log.d("MyToDo", "REPOSITORY UPDATE DEBUG: Task updated successfully: " + task.description + " (ID: " + task.id + ")");
         });
     }
 

@@ -293,8 +293,6 @@ public class MainActivity extends AppCompatActivity {
                             for (Task task : tasks) {
                                 if (task.id == taskId) {
                                     Log.d("MyToDo", "onCreate: Found task: " + task.description + ", id: " + task.id);
-                                    Log.d("MyToDo", "onCreate: Task details - description: " + task.description + ", dayOfWeek: " + task.dayOfWeek + ", dueTime: " + task.dueTime + ", isRecurring: " + task.isRecurring + ", recurrenceType: " + task.recurrenceType + ", reminderOffset: " + task.reminderOffset);
-                                    
                                     selectedTask = task;
                                     updateButtonStates();
                                     Log.d("MyToDo", "onCreate: About to show edit dialog for task: " + task.description);
@@ -434,7 +432,10 @@ public class MainActivity extends AppCompatActivity {
         if (moveButton != null) {
             moveButton.setOnClickListener(v -> {
                 if (selectedTask != null) {
-                    showMoveTaskDialog(selectedTask);
+                    // Root cause: selectedTask comes from adapter at tap time; sync may not have
+                    // persisted firestoreDocumentId yet, so LiveData hasn't re-emitted. Refresh from DB
+                    // so we always pass a task with current firestoreDocumentId (same as delete).
+                    refreshSelectedTaskFromDatabase(selectedTask.id, refreshed -> showMoveTaskDialog(refreshed));
                 } else {
                     Toast.makeText(this, getString(R.string.select_task_to_move), Toast.LENGTH_SHORT).show();
                 }
@@ -452,7 +453,6 @@ public class MainActivity extends AppCompatActivity {
                         // Handle recurring task completion
                         if (selectedTask.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(selectedTask.recurrenceType)) {
                             // For monthly tasks, update due date to next month and reset to waiting
-                            Log.d("MyToDo", "COMPLETION DEBUG: Before monthly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
                             if (selectedTask.dueDate != null) {
                                 calendar.setTimeInMillis(selectedTask.dueDate);
@@ -466,11 +466,9 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
-                            Log.d("MyToDo", "COMPLETION DEBUG: After monthly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Monthly task completed and moved to next month: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(selectedTask.recurrenceType)) {
                             // For weekly tasks, update due date to next week and reset to waiting
-                            Log.d("MyToDo", "COMPLETION DEBUG: Before weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
                             if (selectedTask.dueDate != null) {
                                 calendar.setTimeInMillis(selectedTask.dueDate);
@@ -484,11 +482,9 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
-                            Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Weekly task completed and moved to next week: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_BIWEEKLY.equals(selectedTask.recurrenceType)) {
                             // For bi-weekly tasks, update due date to 2 weeks later and reset to waiting
-                            Log.d("MyToDo", "COMPLETION DEBUG: Before bi-weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
                             if (selectedTask.dueDate != null) {
                                 calendar.setTimeInMillis(selectedTask.dueDate);
@@ -502,11 +498,9 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
-                            Log.d("MyToDo", "COMPLETION DEBUG: After bi-weekly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Bi-weekly task completed and moved to 2 weeks later: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else if (selectedTask.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(selectedTask.recurrenceType)) {
                             // For yearly tasks, update due date to next year and reset to waiting
-                            Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Calendar calendar = Calendar.getInstance();
                             if (selectedTask.dueDate != null) {
                                 calendar.setTimeInMillis(selectedTask.dueDate);
@@ -520,15 +514,12 @@ public class MainActivity extends AppCompatActivity {
                             selectedTask.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                             selectedTask.isCompleted = false;
                             selectedTask.completionDate = null;
-                            Log.d("MyToDo", "COMPLETION DEBUG: After yearly task update - ID: " + selectedTask.id + ", dueDate: " + selectedTask.dueDate + ", dayOfWeek: " + selectedTask.dayOfWeek + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Yearly task completed and moved to next year: " + selectedTask.description + ", new due date: " + selectedTask.dueDate + ", id: " + selectedTask.id);
                         } else {
                             // For non-recurring tasks, just toggle completion status
-                            Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + selectedTask.id + ", isCompleted: " + selectedTask.isCompleted);
                             selectedTask.isCompleted = !selectedTask.isCompleted;
                             Calendar calendar = Calendar.getInstance();
                             selectedTask.completionDate = selectedTask.isCompleted ? calendar.getTimeInMillis() : null;
-                            Log.d("MyToDo", "COMPLETION DEBUG: After non-recurring task update - ID: " + selectedTask.id + ", isCompleted: " + selectedTask.isCompleted);
                             Log.d("MyToDo", "Complete button: Completed task: " + selectedTask.description + ", isCompleted: " + selectedTask.isCompleted + ", id: " + selectedTask.id);
                         }
 
@@ -538,7 +529,6 @@ public class MainActivity extends AppCompatActivity {
                             Log.d("MyToDo", "Complete button: Cancelled reminder for completed task: " + selectedTask.description);                     
                         }
 
-                        Log.d("MyToDo", "COMPLETION DEBUG: About to call viewModel.update() for task ID: " + selectedTask.id);
                         viewModel.update(selectedTask);
                         
                         // Sync task completion to cloud if user is authenticated
@@ -579,7 +569,7 @@ public class MainActivity extends AppCompatActivity {
             deleteButton.setOnClickListener(v -> {
                 if (selectedTask != null) {
                     // Refresh the selected task from database to get latest firestoreDocumentId
-                    refreshSelectedTaskFromDatabase(selectedTask.id);
+                    refreshSelectedTaskFromDatabase(selectedTask.id, refreshed -> showDeleteConfirmationDialog(refreshed));
                 } else {
                     Toast.makeText(this, getString(R.string.select_task_to_delete), Toast.LENGTH_SHORT).show();
                 }
@@ -1055,7 +1045,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Initialize from task or defaults
         if (task != null) {
-            Log.d("MyToDo", "showTaskDialog: Populating form with task data - description: " + task.description + ", dayOfWeek: " + task.dayOfWeek + ", dueTime: " + task.dueTime + ", isRecurring: " + task.isRecurring + ", recurrenceType: " + task.recurrenceType + ", reminderOffset: " + task.reminderOffset);
             descriptionEditText.setText(task.description);
             selectedDueDate = task.dueDate;
             selectedDueTime = task.dueTime;
@@ -1394,24 +1383,42 @@ public class MainActivity extends AppCompatActivity {
                     Log.d("MyToDo", "showTaskDialog: New task created - description=" + newTask.description + 
                           ", dueTime=" + newTask.dueTime + ", priority=" + newTask.priority + 
                           ", manualPosition=" + newTask.manualPosition + ", reminderOffset=" + reminderOffset);
-                    if (reminderOffset != null && reminderOffset >= 0) {
+                    
+                    // Insert task first to get the ID, then schedule reminder
+                    // Run on background thread to avoid blocking UI
+                    final Task taskToInsert = newTask;
+                    final Integer reminderOffsetFinal = reminderOffset;
+                    new Thread(() -> {
                         try {
-                            if (reminderOffset == 0) {
-                                Log.d("MyToDo", "showTaskDialog: Scheduling reminder for new task AT the time (offset: 0)");
-                            } else {
-                                Log.d("MyToDo", "showTaskDialog: Scheduling reminder for new task " + reminderOffset + " minutes before");
+                            Task insertedTask = viewModel.insertSync(taskToInsert);
+                            // Verify ID was set
+                            if (insertedTask.id == 0) {
+                                Log.e("MyToDo", "showTaskDialog: ERROR - Task ID is still 0 after insertSync! Cannot schedule reminder.");
+                                return;
                             }
-                            scheduleReminder(newTask);
+                            
+                            // Schedule reminder on main thread with the actual task ID
+                            runOnUiThread(() -> {
+                                if (reminderOffsetFinal != null && reminderOffsetFinal >= 0) {
+                                    try {
+                                        if (reminderOffsetFinal == 0) {
+                                            Log.d("MyToDo", "showTaskDialog: Scheduling reminder for new task AT the time (offset: 0)");
+                                        } else {
+                                            Log.d("MyToDo", "showTaskDialog: Scheduling reminder for new task " + reminderOffsetFinal + " minutes before");
+                                        }
+                                        scheduleReminder(insertedTask);
+                                    } catch (Exception e) {
+                                        Log.e("MyToDo", "showTaskDialog: Error scheduling reminder for new task", e);
+                                        // Continue with task creation even if reminder fails
+                                    }
+                                } else {
+                                    Log.d("MyToDo", "showTaskDialog: No reminder scheduled for new task (offset: " + reminderOffsetFinal + ")");
+                                }
+                            });
                         } catch (Exception e) {
-                            Log.e("MyToDo", "showTaskDialog: Error scheduling reminder for new task", e);
-                            // Continue with task creation even if reminder fails
+                            Log.e("MyToDo", "showTaskDialog: Error inserting new task", e);
                         }
-                    } else {
-                        Log.d("MyToDo", "showTaskDialog: No reminder scheduled for new task (offset: " + reminderOffset + ")");
-                    }
-                    Log.d("MyToDo", "showTaskDialog: About to call viewModel.insert for new task: " + newTask.description);
-                    viewModel.insert(newTask);
-                    Log.d("MyToDo", "showTaskDialog: viewModel.insert called for new task: " + newTask.description + ", id: " + newTask.id);
+                    }).start();
                     
                     // Refresh widgets after task creation (only if widgets are installed)
                     if (WidgetUpdateHelper.hasWidgets(this)) {
@@ -1474,10 +1481,7 @@ public class MainActivity extends AppCompatActivity {
                     } else {
                         Log.d("MyToDo", "showTaskDialog: No reminder scheduled for existing task (offset: " + reminderOffset + ")");
                     }
-                    Log.d("MyToDo", "showTaskDialog: About to call viewModel.update for existing task: " + task.description + ", id: " + task.id);
-                    Log.d("MyToDo", "showTaskDialog: Task details before update - dayOfWeek: " + task.dayOfWeek + ", description: " + task.description + ", firestoreDocumentId: " + task.firestoreDocumentId);
                     viewModel.update(task);
-                    Log.d("MyToDo", "showTaskDialog: viewModel.update called for existing task: " + task.description + ", id: " + task.id);
                     
                     // Refresh widgets after task update (only if widgets are installed)
                     if (WidgetUpdateHelper.hasWidgets(this)) {
@@ -1550,48 +1554,27 @@ public class MainActivity extends AppCompatActivity {
         // Log.d("MyToDo", "showTaskDialog: Dialog.show() called successfully");
     }
 
-    private void refreshSelectedTaskFromDatabase(int taskId) {
-        // DEBUG: Uncomment for debugging
-        // Log.d("MyToDo", "REFRESH DEBUG: Refreshing task from database - ID: " + taskId);
-        
-        // Get the latest task data from database
+    /**
+     * Load the latest task from DB (so firestoreDocumentId etc. are current) and run the callback on UI thread.
+     * Used so Move/Delete use up-to-date task data instead of the adapter reference, which can be stale
+     * when sync has persisted firestoreDocumentId but LiveData hasn't re-emitted yet.
+     */
+    private void refreshSelectedTaskFromDatabase(int taskId, java.util.function.Consumer<Task> onRefreshed) {
         AppDatabase.databaseWriteExecutor.execute(() -> {
             try {
                 TaskDao taskDao = AppDatabase.getDatabase(this).taskDao();
-                List<Task> allTasks = taskDao.getAllTasksIncludingDeletedSync();
-                
-                Task refreshedTask = null;
-                for (Task task : allTasks) {
-                    if (task.id == taskId) {
-                        refreshedTask = task;
-                        break;
-                    }
-                }
-                
-                if (refreshedTask != null) {
-                    // DEBUG: Uncomment for debugging
-                    // Log.d("MyToDo", "REFRESH DEBUG: Found refreshed task - " + refreshedTask.description + 
-                    //       " (ID: " + refreshedTask.id + ", FirestoreID: " + (refreshedTask.firestoreDocumentId != null ? refreshedTask.firestoreDocumentId : "NULL") + 
-                    //       ", deletedAt: " + (refreshedTask.deletedAt != null ? refreshedTask.deletedAt : "null") + ")");
-                    
-                    // Update selectedTask on main thread
-                    final Task finalRefreshedTask = refreshedTask;
-                    runOnUiThread(() -> {
-                        selectedTask = finalRefreshedTask;
-                        showDeleteConfirmationDialog(selectedTask);
-                    });
-                } else {
-                    // DEBUG: Log.e("MyToDo", "REFRESH DEBUG: Task not found in database - ID: " + taskId);
-                    runOnUiThread(() -> {
-                        Toast.makeText(this, "Task not found", Toast.LENGTH_SHORT).show();
-                    });
-                }
-            } catch (Exception e) {
-                // DEBUG: Uncomment for debugging
-                // Log.e("MyToDo", "REFRESH DEBUG: Error refreshing task from database", e);
+                Task refreshedTask = taskDao.getTaskById(taskId);
+                final Task finalRefreshed = refreshedTask;
                 runOnUiThread(() -> {
-                    Toast.makeText(this, "Error refreshing task", Toast.LENGTH_SHORT).show();
+                    if (finalRefreshed != null) {
+                        selectedTask = finalRefreshed;
+                        onRefreshed.accept(finalRefreshed);
+                    } else {
+                        Toast.makeText(this, "Task not found", Toast.LENGTH_SHORT).show();
+                    }
                 });
+            } catch (Exception e) {
+                runOnUiThread(() -> Toast.makeText(this, "Error refreshing task", Toast.LENGTH_SHORT).show());
             }
         });
     }
@@ -1907,7 +1890,6 @@ public class MainActivity extends AppCompatActivity {
                 task.dayOfWeek = englishDayOfWeek;
                 viewModel.update(task);
                 Log.d("MyToDo", "showMoveTaskDialog: Task moved to day: " + englishDayOfWeek + ", id: " + task.id);
-                
                 // Sync task move to cloud if user is authenticated
                 if (authService.isUserSignedIn()) {
                     syncManager.forceSync(new SyncManager.SyncCallback() {
@@ -1915,15 +1897,12 @@ public class MainActivity extends AppCompatActivity {
                         public void onSyncComplete(boolean success, String message) {
                             Log.d("MyToDo", "Task move sync: " + (success ? "Success" : "Failed") + " - " + message);
                         }
-
                         @Override
                         public void onSyncProgress(String message) {
                             Log.d("MyToDo", "Task move sync progress: " + message);
                         }
                     });
                 }
-                
-                // Close the dialog after moving the task
                 dialog.dismiss();
             }
         };
@@ -2500,7 +2479,6 @@ public class MainActivity extends AppCompatActivity {
                 // Handle recurring task completion
                 if (task.isRecurring && TaskConstants.RECURRENCE_MONTHLY.equals(task.recurrenceType)) {                                                         
                     // For monthly tasks, update due date to next month and reset to waiting                                                                    
-                    Log.d("MyToDo", "COMPLETION DEBUG: Before monthly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                  
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTimeInMillis(task.dueDate);
                     calendar.add(Calendar.MONTH, 1);
@@ -2508,11 +2486,9 @@ public class MainActivity extends AppCompatActivity {
                     task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                     task.isCompleted = false;
                     task.completionDate = null;
-                    Log.d("MyToDo", "COMPLETION DEBUG: After monthly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
                     Log.d("MyToDo", "onContextItemSelected: Monthly task completed and moved to next month: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                     
                 } else if (task.isRecurring && TaskConstants.RECURRENCE_WEEKLY.equals(task.recurrenceType)) {                                                   
                     // For weekly tasks, update due date to next week and reset to waiting                                                                      
-                    Log.d("MyToDo", "COMPLETION DEBUG: Before weekly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTimeInMillis(task.dueDate);
                     calendar.add(Calendar.WEEK_OF_YEAR, 1);
@@ -2520,11 +2496,9 @@ public class MainActivity extends AppCompatActivity {
                     task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                     task.isCompleted = false;
                     task.completionDate = null;
-                    Log.d("MyToDo", "COMPLETION DEBUG: After weekly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                    
                     Log.d("MyToDo", "onContextItemSelected: Weekly task completed and moved to next week: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                       
                 } else if (task.isRecurring && TaskConstants.RECURRENCE_YEARLY.equals(task.recurrenceType)) {                                                   
                     // For yearly tasks, update due date to next year and reset to waiting                                                                      
-                    Log.d("MyToDo", "COMPLETION DEBUG: Before yearly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                   
                     Calendar calendar = Calendar.getInstance();
                     calendar.setTimeInMillis(task.dueDate);
                     calendar.add(Calendar.YEAR, 1);
@@ -2532,19 +2506,15 @@ public class MainActivity extends AppCompatActivity {
                     task.dayOfWeek = TaskConstants.DAY_NONE; // Reset to waiting
                     task.isCompleted = false;
                     task.completionDate = null;
-                    Log.d("MyToDo", "COMPLETION DEBUG: After yearly task update - ID: " + task.id + ", dueDate: " + task.dueDate + ", dayOfWeek: " + task.dayOfWeek + ", isCompleted: " + task.isCompleted);                                    
                     Log.d("MyToDo", "onContextItemSelected: Yearly task completed and moved to next year: " + task.description + ", new due date: " + task.dueDate + ", id: " + task.id);                                                       
                 } else {
                     // For non-recurring tasks, just toggle completion status   
-                    Log.d("MyToDo", "COMPLETION DEBUG: Before non-recurring task update - ID: " + task.id + ", isCompleted: " + task.isCompleted);              
                     task.isCompleted = !task.isCompleted;
                     Calendar calendar = Calendar.getInstance();
                     task.completionDate = task.isCompleted ? calendar.getTimeInMillis() : null;                                                                 
-                    Log.d("MyToDo", "COMPLETION DEBUG: After non-recurring task update - ID: " + task.id + ", isCompleted: " + task.isCompleted);               
                     Log.d("MyToDo", "onContextItemSelected: Completed task: " + task.description + ", isCompleted: " + task.isCompleted + ", id: " + task.id);  
                 }
 
-                Log.d("MyToDo", "COMPLETION DEBUG: About to call viewModel.update() for task ID: " + task.id);                                                  
                 viewModel.update(task);
 
                 // Sync task completion to cloud if user is authenticated       
@@ -3006,7 +2976,13 @@ public class MainActivity extends AppCompatActivity {
             
             // Build changelog text with dates
             StringBuilder changelog = new StringBuilder();
-            changelog.append("v1.6 - Latest (January 9, 2026)\n");
+            changelog.append("v1.6.2 - Latest (February 20, 2026)\n");
+            changelog.append("• Fixed task move to another day being overridden by sync\n\n");
+
+            changelog.append("v1.6.1 (January 11, 2026)\n");
+            changelog.append("• Fixed task completion from notifications not syncing to web/laptop\n\n");
+
+            changelog.append("v1.6 (January 9, 2026)\n");
             changelog.append("• Fixed recurrence type translation in task list and edit dialog\n");
             changelog.append("• Changed date format to Israeli format (dd-MM-yyyy)\n");
             changelog.append("• Fixed task deletion sync between devices\n");

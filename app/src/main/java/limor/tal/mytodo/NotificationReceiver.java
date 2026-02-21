@@ -215,7 +215,6 @@ public class NotificationReceiver extends BroadcastReceiver {
                         Log.d("MyToDo", "NotificationReceiver: Yearly task completed and moved to next year: " + task.description + ", new due date: " + task.dueDate);
                     } else {
                         // For non-recurring tasks, mark as completed and clear fields
-                        Log.d("MyToDo", "NotificationReceiver: Handling non-recurring task: " + task.description);
                         task.isCompleted = true;
                         task.completionDate = System.currentTimeMillis();
                         task.dueDate = null;
@@ -228,14 +227,52 @@ public class NotificationReceiver extends BroadcastReceiver {
                         Log.d("MyToDo", "NotificationReceiver: Cleared fields for non-recurring task: " + task.description);
                     }
                     
-                    Log.d("MyToDo", "NotificationReceiver: After update - isCompleted: " + task.isCompleted + ", completionDate: " + task.completionDate);
-                    
+                    // Update updatedAt timestamp before syncing
+                    long updateTimestamp = System.currentTimeMillis();
+                    task.updatedAt = updateTimestamp;
                     repository.update(task);
                     Log.d("MyToDo", "NotificationReceiver: Task marked as completed: " + taskDescription + ", ID: " + taskId);
                     
-                    // Verify the update worked by retrieving the task again
-                    Task updatedTask = repository.getTaskById(taskId);
-                    Log.d("MyToDo", "NotificationReceiver: Verification - retrieved task isCompleted: " + (updatedTask != null ? updatedTask.isCompleted : "null"));
+                    // Sync task completion to Firestore
+                    FirestoreService firestoreService = new FirestoreService();
+                    if (firestoreService.isUserAuthenticated()) {
+                        if (task.firestoreDocumentId != null) {
+                            // Task exists in Firestore, update it
+                            Log.d("MyToDo", "NotificationReceiver: Syncing task completion to Firestore: " + task.firestoreDocumentId);
+                            firestoreService.saveTask(task, new FirestoreService.FirestoreCallback() {
+                                @Override
+                                public void onSuccess(Object result) {
+                                    Log.d("MyToDo", "NotificationReceiver: Task completion synced successfully to Firestore");
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("MyToDo", "NotificationReceiver: Failed to sync task completion to Firestore: " + error);
+                                }
+                            });
+                        } else {
+                            Log.d("MyToDo", "NotificationReceiver: Task has no Firestore ID, creating in Firestore");
+                            // Task doesn't exist in Firestore yet, create it
+                            firestoreService.saveTask(task, new FirestoreService.FirestoreCallback() {
+                                @Override
+                                public void onSuccess(Object result) {
+                                    Log.d("MyToDo", "NotificationReceiver: Task created in Firestore with ID: " + result);
+                                    // Update local task with Firestore document ID
+                                    if (result != null) {
+                                        task.firestoreDocumentId = result.toString();
+                                        repository.update(task);
+                                    }
+                                }
+
+                                @Override
+                                public void onError(String error) {
+                                    Log.e("MyToDo", "NotificationReceiver: Failed to create task in Firestore: " + error);
+                                }
+                            });
+                        }
+                    } else {
+                        Log.d("MyToDo", "NotificationReceiver: User not authenticated, skipping Firestore sync");
+                    }
                     
                     // Show toast message on main thread
                     android.os.Handler mainHandler = new android.os.Handler(android.os.Looper.getMainLooper());
