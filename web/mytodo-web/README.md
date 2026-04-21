@@ -151,6 +151,14 @@ The web app can be deployed to any static hosting service:
 - **Netlify**: Drag and drop the `dist` folder
 - **GitHub Pages**: Use GitHub Actions to build and deploy
 
+## Latest Release Notes
+
+### v0.0.2 (April 21, 2026)
+
+- Added a clear (`X`) button in the search box to quickly reset the search filter
+- New tasks now default to the currently expanded day/category in the task list
+- Fixed a production React hook-order issue that could prevent the app from loading
+
 ## Troubleshooting
 
 ### Common Issues

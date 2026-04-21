@@ -26,6 +26,7 @@ import { Task } from '../models/Task';
 import CategorizedTaskList from './CategorizedTaskList';
 import TaskDialog from './TaskDialog';
 import { useLanguage } from '../contexts/LanguageContext';
+import { TaskConstants } from '../constants/TaskConstants';
 
 const Dashboard = ({ taskService, user }) => {
   const { t, language, toggleLanguage } = useLanguage();
@@ -37,6 +38,7 @@ const Dashboard = ({ taskService, user }) => {
   const [editingTask, setEditingTask] = useState(null);
   const [snackbar, setSnackbar] = useState({ open: false, message: '', severity: 'success' });
   const [fixingTasks, setFixingTasks] = useState(false);
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   useEffect(() => {
     loadTasks();
@@ -93,6 +95,26 @@ const Dashboard = ({ taskService, user }) => {
   const handleAddTask = () => {
     setEditingTask(null);
     setDialogOpen(true);
+  };
+
+  const mapCategoryToWhenToPerform = (categoryName) => {
+    if (!categoryName) return TaskConstants.DAY_NONE;
+
+    const categoryToDayMap = {
+      [t('Immediate')]: TaskConstants.DAY_IMMEDIATE,
+      [t('Soon')]: TaskConstants.DAY_SOON,
+      [t('Waiting')]: TaskConstants.DAY_NONE,
+      [t('Completed')]: TaskConstants.DAY_NONE,
+      [t('Sunday')]: TaskConstants.DAY_SUNDAY,
+      [t('Monday')]: TaskConstants.DAY_MONDAY,
+      [t('Tuesday')]: TaskConstants.DAY_TUESDAY,
+      [t('Wednesday')]: TaskConstants.DAY_WEDNESDAY,
+      [t('Thursday')]: TaskConstants.DAY_THURSDAY,
+      [t('Friday')]: TaskConstants.DAY_FRIDAY,
+      [t('Saturday')]: TaskConstants.DAY_SATURDAY
+    };
+
+    return categoryToDayMap[categoryName] || TaskConstants.DAY_NONE;
   };
 
   const handleEditTask = (task) => {
@@ -238,6 +260,7 @@ const Dashboard = ({ taskService, user }) => {
             onEditTask={handleEditTask}
             onDeleteTask={handleDeleteTask}
             onToggleCompletion={handleToggleCompletion}
+            onExpandedCategoryChange={setExpandedCategory}
           />
       </Container>
 
@@ -255,6 +278,7 @@ const Dashboard = ({ taskService, user }) => {
         onClose={() => setDialogOpen(false)}
         onSave={handleSaveTask}
         task={editingTask}
+        defaultWhenToPerform={!editingTask ? mapCategoryToWhenToPerform(expandedCategory) : undefined}
       />
 
       <Snackbar

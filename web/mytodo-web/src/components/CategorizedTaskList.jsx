@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Card,
   CardContent,
@@ -23,6 +23,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import FamilyRestroom from '@mui/icons-material/FamilyRestroom';
 import { format } from 'date-fns';
@@ -34,12 +35,13 @@ const CategorizedTaskList = ({
   loading, 
   onEditTask, 
   onDeleteTask, 
-  onToggleCompletion 
+  onToggleCompletion,
+  onExpandedCategoryChange
 }) => {
   const { t, language } = useLanguage();
   const [searchTerm, setSearchTerm] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [expandedCategories, setExpandedCategories] = useState(new Set(['Today'])); // Default to today expanded
+  const [expandedCategory, setExpandedCategory] = useState(null);
 
   const categorizer = useMemo(() => new TaskCategorizer(t), [t]);
 
@@ -109,11 +111,9 @@ const CategorizedTaskList = ({
 
   const handleCategoryToggle = (categoryName) => {
     // Only allow one category to be expanded at a time
-    if (expandedCategories.has(categoryName)) {
-      setExpandedCategories(new Set()); // Close all if clicking the same category
-    } else {
-      setExpandedCategories(new Set([categoryName])); // Open only this category
-    }
+    const nextExpandedCategory = expandedCategory === categoryName ? null : categoryName;
+    setExpandedCategory(nextExpandedCategory);
+    onExpandedCategoryChange?.(nextExpandedCategory);
   };
 
   const formatDueDate = (dueDate, dueTime) => {
@@ -222,6 +222,57 @@ const CategorizedTaskList = ({
     return colorMap[categoryName] || 'default';
   };
 
+  const categoryGroups = useMemo(() => {
+    const groups = [];
+    let currentCategory = null;
+    let currentTasks = [];
+
+    categorizedTasks.forEach(item => {
+      if (item.type === 'header') {
+        // Save previous category if it exists
+        if (currentCategory) {
+          groups.push({
+            category: currentCategory,
+            tasks: currentTasks
+          });
+        }
+        
+        // Start new category
+        currentCategory = item;
+        currentTasks = [];
+      } else if (item.type === 'task') {
+        currentTasks.push(item);
+      }
+    });
+
+    // Don't forget the last category
+    if (currentCategory) {
+      groups.push({
+        category: currentCategory,
+        tasks: currentTasks
+      });
+    }
+
+    return groups;
+  }, [categorizedTasks]);
+
+  useEffect(() => {
+    if (categoryGroups.length === 0) {
+      if (expandedCategory !== null) {
+        setExpandedCategory(null);
+        onExpandedCategoryChange?.(null);
+      }
+      return;
+    }
+
+    const hasExpandedCategory = expandedCategory && categoryGroups.some(({ category }) => category.name === expandedCategory);
+    if (!hasExpandedCategory) {
+      const firstCategory = categoryGroups[0].category.name;
+      setExpandedCategory(firstCategory);
+      onExpandedCategoryChange?.(firstCategory);
+    }
+  }, [categoryGroups, expandedCategory, onExpandedCategoryChange]);
+
   if (loading) {
     return (
       <Box display="flex" justifyContent="center" alignItems="center" minHeight="200px">
@@ -238,37 +289,6 @@ const CategorizedTaskList = ({
         </Typography>
       </Card>
     );
-  }
-
-  // Group items by category
-  const categoryGroups = [];
-  let currentCategory = null;
-  let currentTasks = [];
-
-  categorizedTasks.forEach(item => {
-    if (item.type === 'header') {
-      // Save previous category if it exists
-      if (currentCategory) {
-        categoryGroups.push({
-          category: currentCategory,
-          tasks: currentTasks
-        });
-      }
-      
-      // Start new category
-      currentCategory = item;
-      currentTasks = [];
-    } else if (item.type === 'task') {
-      currentTasks.push(item);
-    }
-  });
-
-  // Don't forget the last category
-  if (currentCategory) {
-    categoryGroups.push({
-      category: currentCategory,
-      tasks: currentTasks
-    });
   }
 
   return (
@@ -288,6 +308,18 @@ const CategorizedTaskList = ({
                     <SearchIcon />
                   </InputAdornment>
                 ),
+                endAdornment: searchTerm ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      edge="end"
+                      onClick={() => setSearchTerm('')}
+                      aria-label={t('Clear search')}
+                    >
+                      <ClearIcon fontSize="small" />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               }}
             />
           </Grid>
@@ -312,7 +344,7 @@ const CategorizedTaskList = ({
       {/* Categorized Tasks */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
         {categoryGroups.map(({ category, tasks: categoryTasks }) => {
-          const isExpanded = expandedCategories.has(category.name);
+          const isExpanded = expandedCategory === category.name;
           const categoryColor = getCategoryColor(category.name);
           const displayName = getCategoryDisplayName(category.name);
 

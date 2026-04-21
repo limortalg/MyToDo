@@ -34,7 +34,7 @@ import { Task } from '../models/Task';
 import { useLanguage } from '../contexts/LanguageContext';
 import { TaskConstants } from '../constants/TaskConstants';
 
-const TaskDialog = ({ open, onClose, onSave, task }) => {
+const TaskDialog = ({ open, onClose, onSave, task, defaultWhenToPerform = TaskConstants.DAY_NONE }) => {
   const { t, language, isRTL } = useLanguage();
   
   
@@ -99,7 +99,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
         description: '',
         dueDate: null,
         dueTime: null,
-        whenToPerform: TaskConstants.DAY_NONE,
+        whenToPerform: defaultWhenToPerform,
         isRecurring: false,
         recurrenceType: TaskConstants.RECURRENCE_DAILY,
         priority: 0,
@@ -108,7 +108,7 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
       });
     }
     setErrors({});
-  }, [task, open]);
+  }, [task, open, defaultWhenToPerform]);
 
   const handleChange = (field) => (event) => {
     const value = event.target.value;
@@ -311,7 +311,6 @@ const TaskDialog = ({ open, onClose, onSave, task }) => {
                     <IconButton 
                       onClick={() => {
                         handleDateChange('dueDate')(null);
-                        setDateText('');
                       }}
                       color="error"
                       size="small"
