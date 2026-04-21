@@ -158,6 +158,8 @@ The web app can be deployed to any static hosting service:
 - Added a clear (`X`) button in the search box to quickly reset the search filter
 - New tasks now default to the currently expanded day/category in the task list
 - Fixed a production React hook-order issue that could prevent the app from loading
+- Kept search/filter controls visible when search results are empty
+- Added missing translation key for the empty search/filter message (Hebrew/English parity)
 
 ## Troubleshooting
 
@@ -167,25 +169,29 @@ The web app can be deployed to any static hosting service:
 2. **Authentication Issues**: Ensure Google Sign-In is enabled in Firebase Console
 3. **No Tasks Showing**: Check if you're signed in with the same Google account as the Android app
 4. **Build Errors**: Make sure all dependencies are installed with `npm install`
+5. **Text Appears Untranslated**
+   - **Cause**: A new UI string was added in a component but not added to `src/contexts/LanguageContext.jsx`
+   - **Solution**: Add the exact same key to both `he` and `en` translation maps and always render text via `t('...')`
+   - **Check**: Switch language in the app and verify the text updates in both directions
 
 ### Sync-Related Issues
 
-5. **Tasks Reappear After Deletion**
+6. **Tasks Reappear After Deletion**
    - **Cause**: Race condition between devices during sync
    - **Solution**: Soft deletion system prevents this - deleted tasks are marked with `deletedAt` timestamp
    - **Check**: Verify `deletedAt` field is set in Firestore for deleted tasks
 
-6. **Duplicate Tasks After Sync**
+7. **Duplicate Tasks After Sync**
    - **Cause**: Improper conflict resolution during merge operations
    - **Solution**: Improved merge logic using `updatedAt` timestamps
    - **Check**: Review sync logs for duplicate task creation
 
-7. **Completed Tasks Reset to Incomplete**
+8. **Completed Tasks Reset to Incomplete**
    - **Cause**: Cloud version overwriting local completion status
    - **Solution**: Timestamp-based conflict resolution preserves newer changes
    - **Check**: Verify `updatedAt` timestamps are being set correctly
 
-8. **Reminder Not Showing (reminderOffset: 0)**
+9. **Reminder Not Showing (reminderOffset: 0)**
    - **Cause**: JavaScript treating 0 as falsy value
    - **Solution**: Fixed to explicitly check for null/undefined instead of using truthiness
    - **Check**: Verify reminderOffset field is properly handled in Task.js and components

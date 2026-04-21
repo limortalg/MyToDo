@@ -281,16 +281,6 @@ const CategorizedTaskList = ({
     );
   }
 
-  if (categorizedTasks.length === 0) {
-    return (
-      <Card sx={{ mt: 3, p: 3, textAlign: 'center' }}>
-        <Typography variant="h6" color="text.secondary">
-          {t('No tasks found. Create your first task by clicking the + button!')}
-        </Typography>
-      </Card>
-    );
-  }
-
   return (
     <Box>
       {/* Search and Filter Controls */}
@@ -343,7 +333,15 @@ const CategorizedTaskList = ({
 
       {/* Categorized Tasks */}
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-        {categoryGroups.map(({ category, tasks: categoryTasks }) => {
+        {categoryGroups.length === 0 ? (
+          <Card sx={{ mt: 1, p: 3, textAlign: 'center' }}>
+            <Typography variant="h6" color="text.secondary">
+              {tasks?.length
+                ? t('No tasks found for the current search/filter.')
+                : t('No tasks found. Create your first task by clicking the + button!')}
+            </Typography>
+          </Card>
+        ) : categoryGroups.map(({ category, tasks: categoryTasks }) => {
           const isExpanded = expandedCategory === category.name;
           const categoryColor = getCategoryColor(category.name);
           const displayName = getCategoryDisplayName(category.name);
